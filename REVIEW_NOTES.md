@@ -39,6 +39,14 @@ None yet. No application code exists.
   Not covered: the alphabetical sort in `src/data/parks.ts`, and `parks.ts` is not yet imported
   by the app (build size unchanged, so the build does not exercise it).
 
+- Stage 2 (list + details): tests written first (5 files failed on missing modules, App tests
+  failed on missing list), then 99 tests passing across 7 files; typecheck, lint, build clean.
+  jsdom covers: keyboard open via Tab+Enter, focus on details heading, focus return on back,
+  live-region text, no focus/announcement on initial load, unknown id, absent fields omitted,
+  text rendered as text, image fallback on error.
+  NOT verified: real browser rendering, CSS layout (phone list/details swap), visible focus
+  appearance, contrast values, screen reader output. Stage 4 covers these.
+
 ## Decisions added during scaffold
 - ESLint pinned to 9.x: `eslint-plugin-jsx-a11y@6.10.2` peers only up to ESLint 9, and
   ESLint 10 would have needed `--legacy-peer-deps`. ESLint 9.39.5 prints a "no longer
