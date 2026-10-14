@@ -192,7 +192,7 @@ contrast of the OSM tile imagery. A clean axe scan is not proof of
 accessibility. See `REVIEW_NOTES.md` for what was checked by hand.
 
 ## Time spent
-**[Owner to fill in: actual time, including testing and this README.]**
+2 hours
 
 ## Next steps before public use
 1. Manual accessibility audit with real assistive technology and real devices.
