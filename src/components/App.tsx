@@ -1,8 +1,17 @@
 import { useEffect, useRef } from 'react';
 import type { Park } from '../data/types';
-import { useHashRoute } from '../lib/useHashRoute';
+import { parkHref, useHashRoute } from '../lib/useHashRoute';
+import { MapBoundary } from './MapBoundary';
 import { ParkDetails } from './ParkDetails';
 import { ParkList } from './ParkList';
+import { ParkMap } from './ParkMap';
+
+// Map markers select a park the same way list links do: by changing the hash.
+// useHashRoute then drives focus, announcement and title for both.
+// (Module-level so the function identity is stable for the map's effects.)
+function selectPark(id: string) {
+  window.location.hash = parkHref(id);
+}
 
 export function App({ parks }: { parks: Park[] }) {
   const { selectedId, navigations } = useHashRoute();
@@ -72,6 +81,13 @@ export function App({ parks }: { parks: Park[] }) {
               <p>No park matches this address.</p>
             </>
           )}
+        </section>
+
+        <section className="map-section" aria-label="Map of parks">
+          <p className="map-note">The list has the same parks as the map.</p>
+          <MapBoundary>
+            <ParkMap parks={parks} selectedId={selectedId} onSelect={selectPark} />
+          </MapBoundary>
         </section>
       </main>
 

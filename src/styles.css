@@ -195,9 +195,68 @@ h2:focus-visible {
   }
 }
 
+.map-section {
+  min-width: 0;
+}
+
+.map-note {
+  margin: 0.5rem 0;
+  color: var(--muted);
+}
+
+.map {
+  height: 20rem;
+  width: 100%;
+  border: 1px solid var(--border);
+}
+
+/* Leaflet sets its own outlines on some elements; keep ours visible. */
+.leaflet-container :focus-visible,
+.leaflet-container:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* The selected marker is larger (set in code) and also recoloured. */
+.marker-selected {
+  filter: hue-rotate(140deg) saturate(2.5);
+}
+
 @media (min-width: 700px) {
   .layout {
     grid-template-columns: minmax(16rem, 22rem) 1fr;
+    grid-template-areas:
+      'list details'
+      'list map';
+    align-items: start;
+  }
+
+  .list-section {
+    grid-area: list;
+  }
+
+  .details-section {
+    grid-area: details;
+  }
+
+  .map-section {
+    grid-area: map;
+  }
+}
+
+@media (min-width: 1100px) {
+  .layout {
+    grid-template-columns: minmax(16rem, 20rem) minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas: 'list details map';
+  }
+
+  .map-section {
+    position: sticky;
+    top: 1rem;
+  }
+
+  .map {
+    height: 32rem;
   }
 }
 

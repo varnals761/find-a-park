@@ -1,8 +1,30 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Park } from '../data/types';
 import { App } from './App';
+
+// Real Leaflet is covered in ParkMap.test.tsx; here the map is a stub that
+// exposes only the props App gives it.
+vi.mock('./ParkMap', () => ({
+  ParkMap: ({
+    parks,
+    selectedId,
+    onSelect,
+  }: {
+    parks: Park[];
+    selectedId: string | null;
+    onSelect: (id: string) => void;
+  }) => (
+    <div data-testid="map-stub" data-selected={selectedId ?? ''}>
+      {parks.map((p) => (
+        <button key={p.id} type="button" onClick={() => onSelect(p.id)}>
+          Marker {p.name}
+        </button>
+      ))}
+    </div>
+  ),
+}));
 
 const parks: Park[] = [
   {
@@ -83,5 +105,36 @@ describe('App', () => {
     render(<App parks={parks} />);
     expect(screen.getByRole('heading', { level: 2, name: 'Park not found' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /all parks/i })).toBeInTheDocument();
+  });
+});
+
+describe('App map integration', () => {
+  it('puts the map in a labelled region that points back to the list', () => {
+    render(<App parks={parks} />);
+    const region = screen.getByRole('region', { name: 'Map of parks' });
+    expect(region).toHaveTextContent(/list has the same parks/i);
+    expect(screen.getByTestId('map-stub')).toBeInTheDocument();
+  });
+
+  it('selecting a marker uses the same path as the list: hash, focus, announcement', async () => {
+    const user = userEvent.setup();
+    render(<App parks={parks} />);
+
+    await user.click(screen.getByRole('button', { name: 'Marker Beta Green' }));
+
+    const heading = await screen.findByRole('heading', { level: 2, name: 'Beta Green' });
+    await waitFor(() => expect(heading).toHaveFocus());
+    expect(window.location.hash).toBe('#/parks/beta');
+    expect(status()).toHaveTextContent('Showing details for Beta Green');
+    expect(screen.getByTestId('map-stub')).toHaveAttribute('data-selected', 'beta');
+  });
+
+  it('keeps the map in sync when the list link is used', async () => {
+    const user = userEvent.setup();
+    render(<App parks={parks} />);
+    await user.click(screen.getByRole('link', { name: 'Alpha Park' }));
+    await waitFor(() =>
+      expect(screen.getByTestId('map-stub')).toHaveAttribute('data-selected', 'alpha'),
+    );
   });
 });

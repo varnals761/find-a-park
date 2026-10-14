@@ -47,6 +47,20 @@ None yet. No application code exists.
   NOT verified: real browser rendering, CSS layout (phone list/details swap), visible focus
   appearance, contrast values, screen reader output. Stage 4 covers these.
 
+- Stage 3 (map): tests first (ParkMap module missing; App map integration and map-failure
+  tests failed), then 111 tests passing across 9 files; typecheck, lint, build, `npm audit`
+  (0 vulnerabilities) clean. ParkMap tests run real Leaflet in jsdom (markers, alt text,
+  tabindex, click, Enter/Space, selected class, cleanup). One test failed on first run because
+  my selector also matched Leaflet's zoom buttons (test bug, fixed; code was right).
+  NOT verified: tiles actually loading, marker icons actually showing under Vite (the
+  classic broken-icon trap), fitBounds result, real keyboard behavior, layout at any width.
+  jsdom has no layout, so none of this is evidence about how the map looks.
+
+## Real defect avoided (found by reading Leaflet 1.9.4 source, not by a test)
+- Leaflet marks markers `role="button"` + `tabindex="0"` but only converts Enter to a click
+  for markers with popups (`Popup.js`). A bare marker is focusable and does nothing on Enter.
+  `ParkMap` handles `keydown` Enter/Space itself; covered by a test.
+
 ## Decisions added during scaffold
 - ESLint pinned to 9.x: `eslint-plugin-jsx-a11y@6.10.2` peers only up to ESLint 9, and
   ESLint 10 would have needed `--legacy-peer-deps`. ESLint 9.39.5 prints a "no longer
