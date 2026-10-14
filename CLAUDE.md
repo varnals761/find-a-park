@@ -58,7 +58,7 @@ proposing anything. Do not assume facts that are not in those files.
   report the real result.
 
 ## Workflow
-- Work on a feature branch (`feature/<n>-<name>`), never directly on `release/1.0.00`.
+- Work on a feature branch (`feature/<n>-<name>`), never directly on `release/1.0.0`.
 - Write or update the acceptance checks (evals/tests) **first**, confirm they
   fail for the right reason, then implement.
 - Small commits, one logical change each. Propose the message; I commit.
