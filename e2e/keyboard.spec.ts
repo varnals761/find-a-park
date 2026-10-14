@@ -30,6 +30,14 @@ test('loads the list and one marker per park, with working marker icons', async 
 test('keyboard only: select from the list, see focus, and return', async ({ page }) => {
   await page.goto('/');
   await page.keyboard.press('Tab');
+  const skip = page.getByRole('link', { name: /skip to content/i });
+  await expect(skip).toBeFocused();
+  expect(await hasVisibleFocusRing(skip)).toBe(true);
+  // Visible when focused: it must be on screen, not off-canvas.
+  const box = await skip.boundingBox();
+  expect(box && box.x >= 0 && box.y >= 0).toBe(true);
+
+  await page.keyboard.press('Tab');
   const first = page.getByRole('link', { name: 'Cedar Hill Nature Preserve' });
   await expect(first).toBeFocused();
   expect(await hasVisibleFocusRing(first)).toBe(true);
@@ -50,7 +58,7 @@ test('keyboard only: select from the list, see focus, and return', async ({ page
 
 test('keyboard only: select a park from a map marker', async ({ page }) => {
   await page.goto('/');
-  const marker = page.getByRole('button', { name: 'Prospect Park' });
+  const marker = page.getByRole('button', { name: 'Prospect Park, show details' });
   await marker.focus();
   expect(await hasVisibleFocusRing(marker)).toBe(true);
   await page.keyboard.press('Enter');
@@ -61,14 +69,14 @@ test('keyboard only: select a park from a map marker', async ({ page }) => {
 
 test('keyboard only: Space also selects a marker', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Hillcrest Skate Park' }).focus();
+  await page.getByRole('button', { name: 'Hillcrest Skate Park, show details' }).focus();
   await page.keyboard.press('Space');
   await expect(page).toHaveURL(/#\/parks\/hillcrest-skate-park$/);
 });
 
 test('mouse click on a marker opens the details', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Sunset Playground' }).click();
+  await page.getByRole('button', { name: 'Sunset Playground, show details' }).click();
   await expect(page).toHaveURL(/#\/parks\/sunset-playground$/);
   await expect(page.getByRole('heading', { level: 2, name: 'Sunset Playground' })).toBeFocused();
 });

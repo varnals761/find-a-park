@@ -1,13 +1,28 @@
+/* ------------------------------------------------------------------ tokens */
+/* Contrast (WCAG 2.x ratio, computed from these hex values):
+   text on bg, muted on bg, link on bg, header text on header bg,
+   all >= 4.5:1; focus ring and --border-strong on bg >= 3:1.
+   See REVIEW_NOTES.md for the numbers. */
 :root {
   --text: #1a1a1a;
   --muted: #4a4a4a;
   --bg: #ffffff;
   --surface: #f3f5f7;
-  --border: #c4cad0;
+  --border: #d0d5da; /* decorative dividers only */
+  --border-strong: #767676; /* boundaries that identify a component, >= 3:1 */
   --link: #0b4f9c;
   --focus: #0b4f9c;
   --current-bg: #e3eefb;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --header-bg: #0b3d73;
+  --header-text: #ffffff;
+  --header-muted: #d6e4f5;
+  --placeholder-bg: #eceff1;
+  --radius: 8px;
+  --space: 1rem;
+  --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  font-family: var(--font);
+  font-size: 100%; /* 16px base; respects the user's browser setting */
   line-height: 1.5;
   color: var(--text);
   background: var(--bg);
@@ -23,51 +38,40 @@ body {
   color: var(--text);
 }
 
-header,
-main {
-  padding: 0 1rem;
-  max-width: 72rem;
-  margin: 0 auto;
-}
-
-h1 {
-  margin: 1rem 0 0;
-  font-size: 1.75rem;
-}
-
-header p {
-  margin: 0 0 1rem;
-  color: var(--muted);
-}
-
-h2 {
-  font-size: 1.35rem;
-  margin: 0.5rem 0;
-}
-
-h3 {
-  font-size: 1.1rem;
-  margin: 1.25rem 0 0.5rem;
-}
-
 a {
   color: var(--link);
 }
 
-/* Visible keyboard focus everywhere; headings are focus targets, not controls. */
-:focus-visible {
+h1,
+h2,
+h3 {
+  line-height: 1.25;
+}
+
+h2 {
+  font-size: 1.375rem;
+  margin: 0 0 0.75rem;
+}
+
+h3 {
+  font-size: 1.125rem;
+  margin: 1.5rem 0 0.5rem;
+}
+
+p {
+  margin: 0 0 var(--space);
+}
+
+/* ------------------------------------------------------------------- focus */
+/* One visible indicator for everything, including elements that receive focus
+   from script (headings, main). Never removed without a replacement. */
+:focus-visible,
+[tabindex='-1']:focus {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
 
-h2:focus {
-  outline: none;
-}
-
-h2:focus-visible {
-  outline: 3px solid var(--focus);
-}
-
+/* ------------------------------------------------------------- utilities */
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -80,65 +84,167 @@ h2:focus-visible {
   border: 0;
 }
 
-.layout {
-  display: grid;
-  gap: 1.5rem;
-  grid-template-columns: 1fr;
-  padding-bottom: 2rem;
+.skip-link {
+  position: absolute;
+  left: 0.5rem;
+  top: -5rem; /* off-screen until focused */
+  z-index: 2000; /* above Leaflet's panes and controls */
+  padding: 0.75rem 1rem;
+  background: var(--bg);
+  color: var(--link);
+  border: 2px solid var(--link);
+  border-radius: var(--radius);
+  font-weight: 600;
 }
 
+.skip-link:focus {
+  top: 0.5rem;
+}
+
+/* When focused it sits over the dark header, where the blue ring would be
+   invisible (1.35:1). A light ring contrasts with the header (10.9:1). */
+.skip-link:focus-visible {
+  outline-color: var(--header-text);
+}
+
+/* ------------------------------------------------------------------ header */
+.site-header {
+  background: var(--header-bg);
+  color: var(--header-text);
+}
+
+.site-header-inner {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: var(--space);
+}
+
+.site-header h1 {
+  margin: 0;
+  font-size: 1.75rem;
+}
+
+.site-header p {
+  margin: 0;
+  color: var(--header-muted);
+}
+
+/* ------------------------------------------------------------------ layout */
+/* Phones: one column. The list and details replace each other (driven by the
+   URL hash), with the map below. */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 1.5rem var(--space) 2.5rem;
+}
+
+.layout.has-selection .list-section {
+  display: none;
+}
+
+.layout:not(.has-selection) .details-section {
+  display: none;
+}
+
+/* >= 56rem: list on the left; details above the map on the right. */
+@media (min-width: 56rem) {
+  .layout {
+    grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr);
+    grid-template-areas:
+      'list details'
+      'list map';
+    align-items: start;
+  }
+
+  .layout.has-selection .list-section,
+  .layout:not(.has-selection) .details-section {
+    display: block;
+  }
+
+  .list-section {
+    grid-area: list;
+  }
+
+  .details-section {
+    grid-area: details;
+  }
+
+  .map-section {
+    grid-area: map;
+  }
+}
+
+/* -------------------------------------------------------------------- list */
 .park-list {
   list-style: none;
   margin: 0;
   padding: 0;
+  display: grid;
+  gap: 0.5rem;
 }
 
 .park-list li {
-  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-left-width: 6px;
+  border-left-color: var(--border-strong);
+  border-radius: var(--radius);
 }
 
 .park-list a {
   display: block;
   min-height: 44px;
-  padding: 0.6rem 0.5rem 0.1rem;
+  padding: 0.625rem 0.75rem 0.25rem;
   font-weight: 600;
-}
-
-.park-list a[aria-current='page'] {
-  background: var(--current-bg);
-  border-left: 4px solid var(--link);
 }
 
 .park-list .address {
   display: block;
-  padding: 0 0.5rem 0.6rem;
+  padding: 0 0.75rem 0.625rem;
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 0.9375rem;
 }
 
+/* Selected: thicker accent border + tint + bold text. Not colour alone, and
+   aria-current="page" carries it for assistive technology. */
+.park-list li:has(a[aria-current]) {
+  background: var(--current-bg);
+  border-left-color: var(--link);
+}
+
+.park-list a[aria-current] {
+  font-weight: 800;
+}
+
+/* ----------------------------------------------------------------- details */
 .back-link {
   display: inline-block;
   min-height: 44px;
-  padding: 0.6rem 0;
+  padding: 0.625rem 0;
 }
 
 .facts {
   margin: 1rem 0;
+  display: grid;
+  gap: 0.25rem;
 }
 
 .facts div {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(5.5rem, 8rem) minmax(0, 1fr);
   gap: 0.75rem;
-  padding: 0.25rem 0;
 }
 
 .facts dt {
-  min-width: 6rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .facts dd {
   margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .amenities,
@@ -156,26 +262,33 @@ h2:focus-visible {
 
 .amenities li {
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: 999px;
   padding: 0.25rem 0.75rem;
 }
 
 .photos {
   display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
   gap: 0.75rem;
 }
 
 .photos img {
   display: block;
-  max-width: 100%;
+  width: 100%;
   height: auto;
+  border-radius: var(--radius);
 }
 
 .image-fallback {
-  padding: 2rem 1rem;
-  background: var(--surface);
-  border: 1px dashed var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 8rem;
+  padding: var(--space);
+  background: var(--placeholder-bg);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
   color: var(--muted);
   text-align: center;
 }
@@ -184,30 +297,29 @@ h2:focus-visible {
   color: var(--muted);
 }
 
-/* Phone: list and details replace each other, driven by the URL hash. */
-@media (max-width: 699px) {
-  .layout.has-selection .list-section {
-    display: none;
-  }
-
-  .layout:not(.has-selection) .details-section {
-    display: none;
-  }
-}
-
+/* --------------------------------------------------------------------- map */
 .map-section {
   min-width: 0;
+  isolation: isolate; /* keep Leaflet's z-indexes inside the map */
 }
 
 .map-note {
-  margin: 0.5rem 0;
+  margin: 0 0 0.5rem;
   color: var(--muted);
 }
 
 .map {
-  height: 20rem;
+  height: 22rem;
   width: 100%;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+@media (min-width: 56rem) {
+  .map {
+    height: 26rem;
+  }
 }
 
 /* Leaflet sets its own outlines on some elements; keep ours visible. */
@@ -222,46 +334,11 @@ h2:focus-visible {
   filter: hue-rotate(140deg) saturate(2.5);
 }
 
-@media (min-width: 700px) {
-  .layout {
-    grid-template-columns: minmax(16rem, 22rem) 1fr;
-    grid-template-areas:
-      'list details'
-      'list map';
-    align-items: start;
-  }
-
-  .list-section {
-    grid-area: list;
-  }
-
-  .details-section {
-    grid-area: details;
-  }
-
-  .map-section {
-    grid-area: map;
-  }
-}
-
-@media (min-width: 1100px) {
-  .layout {
-    grid-template-columns: minmax(16rem, 20rem) minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-areas: 'list details map';
-  }
-
-  .map-section {
-    position: sticky;
-    top: 1rem;
-  }
-
-  .map {
-    height: 32rem;
-  }
-}
-
+/* ----------------------------------------------------------------- motion */
 @media (prefers-reduced-motion: reduce) {
-  * {
+  *,
+  *::before,
+  *::after {
     scroll-behavior: auto !important;
     transition: none !important;
     animation: none !important;

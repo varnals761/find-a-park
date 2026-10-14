@@ -28,48 +28,68 @@ placeholder data.
 
 ## Security posture
 
-Status key: `[x]` implemented and checked, `[ ]` planned / not yet verified.
-Update this list as work lands. Do not mark an item done without checking it.
+Status key: `[x]` implemented and checked (see the verification record below),
+`[ ]` planned / not yet verified. Do not mark an item done without checking it.
 
 ### Secrets and data
-- [ ] No secrets, keys, or tokens in the repository or history
-      (verify: `git grep -iE "api[_-]?key|token|secret|password"`).
-- [ ] No API keys required to run (map tiles need none).
-- [ ] `.env*` files are gitignored.
-- [ ] No personal data collected, stored, or transmitted. No cookies set by
-      the app. Geolocation, if added, is opt-in and never sent anywhere.
+- [x] No secrets, keys, or tokens in the repository or history. Checked with a
+      pattern scan of tracked and untracked source plus a history scan; a
+      pattern scan is not proof of absence.
+- [x] No API keys required to run (map tiles need none).
+- [x] `.env*` files are gitignored (`git check-ignore` confirmed).
+- [x] No personal data collected, stored, or transmitted by the app. No cookies
+      and no localStorage/sessionStorage use (checked in a browser test).
+      Geolocation is not implemented.
 
 ### Third parties
-- [ ] No analytics, trackers, ad scripts, or third-party CDNs.
-- [ ] The only runtime network dependency is map tile requests; the app remains
-      fully usable if they fail.
-- [ ] Tile provider attribution and usage policy are respected.
+- [x] No analytics, trackers, ad scripts, or third-party CDNs. Leaflet and its
+      CSS and icons are bundled from `node_modules`.
+- [x] Runtime network requests are map tiles (OpenStreetMap) and the park image
+      URLs from the dataset. The app remains fully usable if either fails
+      (browser test with both blocked).
+- [ ] Tile provider attribution and usage policy are respected. Attribution is
+      shown; the OSM tile usage policy was not reviewed in depth and the
+      public tile server is not suitable for production traffic.
 
 ### Handling untrusted input
-- [ ] Dataset text (names, descriptions, addresses, URLs) is treated as
-      untrusted and rendered as plain text.
-- [ ] No `dangerouslySetInnerHTML`, `innerHTML`, or `eval` (verify: `git grep`).
-- [ ] The dataset is validated at a single boundary; malformed records are
-      skipped without crashing the app.
-- [ ] Image URLs are used only as `<img src>`; failures fall back gracefully.
-- [ ] External links use `rel="noopener noreferrer"`.
+- [x] Dataset text (names, descriptions, addresses, URLs) is rendered as plain
+      text (unit test with an HTML-looking description).
+- [x] No `dangerouslySetInnerHTML`, `innerHTML`, or `eval` in app source. Note:
+      Leaflet itself uses `innerHTML` for its attribution control; the only
+      string given to it is a constant in `ParkMap.tsx`, never dataset text.
+- [x] The dataset is validated at a single boundary (`normalizePark`);
+      malformed records are skipped without crashing the app.
+- [x] Image URLs are used only as `<img src>`, are limited to http(s), and
+      failures fall back gracefully.
+- [x] External links use `rel="noopener noreferrer"` (unit test on the
+      attribution links, which are the only external links).
 
 ### Browser hardening
-- [ ] A restrictive Content-Security-Policy is documented and tested
-      (default `'self'`; allow only the tile and image origins actually used).
-- [ ] No inline scripts requiring `'unsafe-inline'` for script execution.
+- [x] A restrictive Content-Security-Policy is documented (`vite.config.ts`) and
+      exercised in a browser test against the production build. It is a
+      `<meta>` tag, which cannot set `frame-ancestors` or report violations.
+- [x] No `'unsafe-inline'` or `'unsafe-eval'` in the policy.
+- [ ] `img-src` allows any `https:` host because the real park image hosts are
+      not known. This is the weakest directive.
+- [ ] Policy is not applied in the dev server (it needs inline scripts for hot
+      reload).
 
 ### Supply chain
-- [ ] Dependencies kept minimal; lockfile committed.
-- [ ] `npm audit` run before release; result recorded below.
+- [x] Dependencies kept minimal (3 runtime packages); lockfile committed.
+- [x] `npm audit` run; result recorded below.
 - [ ] Automated dependency updates (Dependabot or equivalent) enabled.
+- [ ] ESLint is pinned to 9.x (a11y plugin does not support 10 yet); npm prints
+      a "no longer supported" notice for it.
 
 ### AI-assisted development
 - [ ] AI tools worked on branches only; every change reviewed by a human
-      before merge.
+      before merge. (Owner to confirm.)
 - [ ] No credentials, personal data, or private material was given to AI tools.
+      (Owner to confirm.)
 - [ ] Generated code and dependencies were reviewed before being accepted.
-- [ ] Full, unredacted session logs are kept in `ai-log/`.
+      (Owner to confirm.)
+- [ ] Full, unredacted session logs are kept in `ai-log/`. (Directory was empty
+      when this was written.)
 
 ## Not claimed
 This project is **not** assessed against, and makes no claim of compliance
@@ -90,10 +110,16 @@ separately in `REVIEW_NOTES.md` and the README.
 - Commission an independent accessibility and security review.
 
 ## Verification record
-Fill in with real output; write "not run" if not run.
+Real results, run 2026-10-14 on branch `feature/07-polish`.
 
 | Check | Date | Result |
 |---|---|---|
-| `npm audit` | | |
-| Secret scan (`git grep` patterns above) | | |
-| CSP exercised in browser | | |
+| `npm audit` | 2026-10-14 | `found 0 vulnerabilities` |
+| Secret scan: `grep -rniE "api[_-]?key\|token\|secret\|password"` over `src e2e index.html` and config files, plus `git grep` on tracked files | 2026-10-14 | No matches |
+| History scan: `git log -p --all -G"api[_-]?key\|token\|secret\|password"` (docs excluded) | 2026-10-14 | No matches |
+| Unsafe DOM/eval scan: `grep -rnE "dangerouslySetInnerHTML\|innerHTML\|eval\(\|document\.write" src e2e index.html` | 2026-10-14 | No matches |
+| Third-party tags in `index.html` | 2026-10-14 | Only `data:` icon and the local module script |
+| `.env`, `.env.local` ignored | 2026-10-14 | `git check-ignore` matched both |
+| CSP exercised in browser (`e2e/csp.spec.ts`, production build) | 2026-10-14 | Policy present, no `unsafe-*`, tiles allowed, zero `securitypolicyviolation` events across list, marker and back navigation |
+| Cookies / web storage (`e2e/csp.spec.ts`) | 2026-10-14 | None set |
+| External link `rel` (`ParkMap.test.tsx`) | 2026-10-14 | All attribution links `noopener noreferrer` (after fixing Leaflet's default link) |

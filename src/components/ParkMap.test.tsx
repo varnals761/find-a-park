@@ -21,41 +21,44 @@ describe('ParkMap', () => {
   it('renders one labelled, focusable marker per park that has coordinates', () => {
     render(<ParkMap parks={parks} selectedId={null} onSelect={() => {}} />);
     const buttons = markers();
-    expect(buttons.map((b) => b.getAttribute('alt'))).toEqual(['Alpha Park', 'Beta Green']);
+    expect(buttons.map((b) => b.getAttribute('alt'))).toEqual([
+      'Alpha Park, show details',
+      'Beta Green, show details',
+    ]);
     for (const button of buttons) expect(button).toHaveAttribute('tabindex', '0');
-    expect(screen.queryByAltText('No Coords Park')).not.toBeInTheDocument();
+    expect(screen.queryByAltText(/No Coords Park/)).not.toBeInTheDocument();
   });
 
   it('calls onSelect with the park id when a marker is clicked', () => {
     const onSelect = vi.fn();
     render(<ParkMap parks={parks} selectedId={null} onSelect={onSelect} />);
-    fireEvent.click(screen.getByAltText('Beta Green'));
+    fireEvent.click(screen.getByAltText('Beta Green, show details'));
     expect(onSelect).toHaveBeenCalledExactlyOnceWith('b');
   });
 
   it.each(['Enter', ' '])('selects the park when %j is pressed on a marker', (key) => {
     const onSelect = vi.fn();
     render(<ParkMap parks={parks} selectedId={null} onSelect={onSelect} />);
-    fireEvent.keyDown(screen.getByAltText('Alpha Park'), { key });
+    fireEvent.keyDown(screen.getByAltText('Alpha Park, show details'), { key });
     expect(onSelect).toHaveBeenCalledExactlyOnceWith('a');
   });
 
   it('ignores other keys', () => {
     const onSelect = vi.fn();
     render(<ParkMap parks={parks} selectedId={null} onSelect={onSelect} />);
-    fireEvent.keyDown(screen.getByAltText('Alpha Park'), { key: 'a' });
-    fireEvent.keyDown(screen.getByAltText('Alpha Park'), { key: 'Tab' });
+    fireEvent.keyDown(screen.getByAltText('Alpha Park, show details'), { key: 'a' });
+    fireEvent.keyDown(screen.getByAltText('Alpha Park, show details'), { key: 'Tab' });
     expect(onSelect).not.toHaveBeenCalled();
   });
 
   it('visually distinguishes the selected marker', () => {
     const { rerender } = render(<ParkMap parks={parks} selectedId="a" onSelect={() => {}} />);
-    expect(screen.getByAltText('Alpha Park')).toHaveClass('marker-selected');
-    expect(screen.getByAltText('Beta Green')).not.toHaveClass('marker-selected');
+    expect(screen.getByAltText('Alpha Park, show details')).toHaveClass('marker-selected');
+    expect(screen.getByAltText('Beta Green, show details')).not.toHaveClass('marker-selected');
 
     rerender(<ParkMap parks={parks} selectedId="b" onSelect={() => {}} />);
-    expect(screen.getByAltText('Alpha Park')).not.toHaveClass('marker-selected');
-    expect(screen.getByAltText('Beta Green')).toHaveClass('marker-selected');
+    expect(screen.getByAltText('Alpha Park, show details')).not.toHaveClass('marker-selected');
+    expect(screen.getByAltText('Beta Green, show details')).toHaveClass('marker-selected');
   });
 
   it('shows a message and no map when no park has coordinates', () => {
@@ -64,6 +67,15 @@ describe('ParkMap', () => {
     );
     expect(screen.getByText(/no parks have a map location/i)).toBeInTheDocument();
     expect(container.querySelector('.leaflet-container')).toBeNull();
+  });
+
+  it('gives every attribution link rel="noopener noreferrer"', () => {
+    const { container } = render(<ParkMap parks={parks} selectedId={null} onSelect={() => {}} />);
+    const links = container.querySelectorAll('.leaflet-control-attribution a');
+    expect(links.length).toBeGreaterThanOrEqual(2); // Leaflet and OpenStreetMap
+    for (const link of links) {
+      expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    }
   });
 
   it('cleans up the map on unmount', () => {

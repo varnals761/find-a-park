@@ -11,7 +11,7 @@ type Props = {
 export function ParkList({ parks, selectedId, headingRef }: Props) {
   return (
     <>
-      <h2 ref={headingRef} tabIndex={-1}>
+      <h2 id="park-list-heading" ref={headingRef} tabIndex={-1}>
         Parks ({parks.length})
       </h2>
       {parks.length === 0 ? (

@@ -68,6 +68,25 @@ None yet. No application code exists.
   text spacing overrides, contrast of the Leaflet map tiles/controls themselves (axe cannot see
   into tile imagery), tile loading from real OSM (blocked in tests on purpose).
 
+- Stage 5 (polish + records): CSP added as a build-only meta tag (`vite.config.ts`); 27 e2e
+  tests pass including `csp.spec.ts` (policy present, no `unsafe-*`, tiles allowed through
+  `img-src`, zero `securitypolicyviolation` events, no cookies or web storage). Unit 112 tests.
+  typecheck, lint, build, `npm audit` (0 vulnerabilities) clean. Screenshots at 1280, 800 and
+  320px were looked at: layout holds, selected pin is larger and red, fallback boxes show, no
+  overflow. Tiles were blocked in the screenshots, so the map showed grey, not real tiles.
+  Security scans and results are in `SECURITY.md`.
+
+## Real finding: Leaflet attribution link had no rel
+- Rule in CLAUDE.md: external links use `rel="noopener noreferrer"`. Inspecting links in the
+  browser showed Leaflet's own "Leaflet" credit lacked `rel` (no `target`, so no opener
+  risk, but against our rule). Test written first and failed, then `setPrefix` with our own
+  link in `ParkMap.tsx`. Note Leaflet inserts that string with innerHTML; it is a constant.
+
+## Real finding: selected pin intercepts clicks on neighbours
+- While writing the cookie test, Playwright could not click the Hillcrest pin because the
+  selected Prospect Park pin (z-index +1000, larger) sat on top and "intercepts pointer
+  events". Same root cause as the axe finding below, seen from mouse use. Not fixed.
+
 ## Real finding: map pins overlap (axe target-size)
 - At the overview zoom neighbouring pins cover each other. axe: "partially obscured (smallest
   space is 14px by 41px, should be at least 24px by 24px)"; 3 pins at 1280px, 7 at 320px.

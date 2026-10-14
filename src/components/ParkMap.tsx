@@ -73,6 +73,11 @@ function LeafletMap({
     const container = containerRef.current;
     if (!container) return;
     const map = L.map(container);
+    // Leaflet's default "Leaflet" credit link has no rel attribute; replace it
+    // with the same credit so every external link is noopener noreferrer.
+    map.attributionControl.setPrefix(
+      '<a href="https://leafletjs.com" rel="noopener noreferrer">Leaflet</a>',
+    );
     L.tileLayer(TILE_URL, { attribution: ATTRIBUTION, maxZoom: 19 }).addTo(map);
     mapRef.current = map;
     return () => {
@@ -91,7 +96,8 @@ function LeafletMap({
     for (const park of parks) {
       const marker = L.marker([park.coords.lat, park.coords.lng], {
         icon: normalIcon,
-        alt: park.name,
+        // The accessible name says what activating the marker does.
+        alt: `${park.name}, show details`,
         title: park.name,
       });
       marker.on('click', () => onSelect(park.id));

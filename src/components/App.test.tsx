@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Park } from '../data/types';
@@ -65,7 +65,9 @@ describe('App', () => {
     const user = userEvent.setup();
     render(<App parks={parks} />);
 
-    await user.tab(); // first focusable element is the first park link
+    await user.tab(); // the skip link is the first tab stop
+    expect(screen.getByRole('link', { name: /skip to content/i })).toHaveFocus();
+    await user.tab(); // then the first park link
     expect(screen.getByRole('link', { name: 'Alpha Park' })).toHaveFocus();
     await user.keyboard('{Enter}');
 
@@ -105,6 +107,46 @@ describe('App', () => {
     render(<App parks={parks} />);
     expect(screen.getByRole('heading', { level: 2, name: 'Park not found' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /all parks/i })).toBeInTheDocument();
+  });
+
+  it('announces a not-found park with role="alert"', () => {
+    window.history.replaceState(null, '', '/#/parks/does-not-exist');
+    render(<App parks={parks} />);
+    expect(screen.getByRole('alert')).toHaveTextContent(/no park matches/i);
+  });
+});
+
+describe('App landmarks and skip link', () => {
+  it('has header, a named navigation for the list, and a main landmark with id', () => {
+    render(<App parks={parks} />);
+    expect(screen.getByRole('banner')).toBeInTheDocument();
+    const nav = screen.getByRole('navigation', { name: 'Parks (2)' });
+    expect(within(nav).getAllByRole('link')).toHaveLength(2);
+    expect(screen.getByRole('main')).toHaveAttribute('id', 'main');
+  });
+
+  it('has exactly one h1 and no heading level skips', () => {
+    window.history.replaceState(null, '', '/#/parks/alpha');
+    render(<App parks={parks} />);
+    const levels = screen.getAllByRole('heading').map((h) => Number(h.tagName[1]));
+    expect(levels.filter((l) => l === 1)).toHaveLength(1);
+    for (let i = 1; i < levels.length; i += 1) {
+      expect(levels[i]! - levels[i - 1]!).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('skip link moves focus to main without touching the selection or the hash', async () => {
+    const user = userEvent.setup();
+    window.history.replaceState(null, '', '/#/parks/alpha');
+    render(<App parks={parks} />);
+
+    await user.tab();
+    await user.keyboard('{Enter}');
+
+    expect(screen.getByRole('main')).toHaveFocus();
+    expect(window.location.hash).toBe('#/parks/alpha');
+    expect(screen.getByRole('heading', { level: 2, name: 'Alpha Park' })).toBeInTheDocument();
+    expect(status()).toBeEmptyDOMElement();
   });
 });
 
