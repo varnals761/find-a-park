@@ -33,6 +33,12 @@ None yet. No application code exists.
   `npm run typecheck`, `npm run lint`, `npm run build`, `npm audit` (0 vulnerabilities),
   dev server returns HTTP 200. Real output was reviewed in the session, not just exit codes.
 
+- Stage 1 (data layer): 64 new tests in `src/data/normalizePark.test.ts` failed first (module
+  missing), then passed (65 total with the smoke test). Typecheck, lint, build clean. Covers the
+  four sample traps, bad types/coords/URLs, duplicate ids, non-array input, and the real sample.
+  Not covered: the alphabetical sort in `src/data/parks.ts`, and `parks.ts` is not yet imported
+  by the app (build size unchanged, so the build does not exercise it).
+
 ## Decisions added during scaffold
 - ESLint pinned to 9.x: `eslint-plugin-jsx-a11y@6.10.2` peers only up to ESLint 9, and
   ESLint 10 would have needed `--legacy-peer-deps`. ESLint 9.39.5 prints a "no longer
