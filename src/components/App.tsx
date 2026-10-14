@@ -1,33 +1,66 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Park } from '../data/types';
-import { parkHref, useHashRoute } from '../lib/useHashRoute';
+import {
+  activeFilterCount,
+  applyFilters,
+  availableAmenities,
+  NO_FILTERS,
+  serializeQuery,
+  type Filters,
+} from '../lib/filters';
+import { stripMarkup } from '../lib/inlineMarkup';
+import { listHref, parkHref, useHashRoute } from '../lib/useHashRoute';
+import { FilterPanel } from './FilterPanel';
 import { MapBoundary } from './MapBoundary';
 import { ParkDetails } from './ParkDetails';
 import { ParkList } from './ParkList';
 import { ParkMap } from './ParkMap';
 
-// Map markers select a park the same way list links do: by changing the hash.
-// useHashRoute then drives focus, announcement and title for both.
-// (Module-level so the function identity is stable for the map's effects.)
-function selectPark(id: string) {
-  window.location.hash = parkHref(id);
+type Props = {
+  parks: Park[];
+  /** Optional second dataset, opened with the "Extended Parks" button. */
+  extendedParks?: Park[];
+};
+
+// How long to wait after the last filter change before announcing the count,
+// so typing or clicking several amenities does not read out every step.
+const ANNOUNCE_DELAY_MS = 400;
+
+function plural(count: number, one: string, many: string): string {
+  return `${count} ${count === 1 ? one : many}`;
 }
 
-export function App({ parks }: { parks: Park[] }) {
-  const { selectedId, navigations } = useHashRoute();
-  const selected = selectedId === null ? undefined : parks.find((p) => p.id === selectedId);
+export function App({ parks, extendedParks }: Props) {
+  const { selectedId, navigations, filters, dataset, query, setQuery } = useHashRoute();
 
-  const mainRef = useRef<HTMLElement>(null);
+  const showExtended = dataset === 'extended' && extendedParks !== undefined;
+  const datasetParks = showExtended ? extendedParks : parks;
+  const datasetName = showExtended ? 'extended' : 'sample';
+
+  const { matches, unreadableHours } = useMemo(
+    () => applyFilters(datasetParks, filters),
+    [datasetParks, filters],
+  );
+  const activeCount = activeFilterCount(filters);
+  const amenityOptions = useMemo(() => availableAmenities(datasetParks), [datasetParks]);
+
+  // Details come from the whole dataset, so a park the filters hide can still
+  // be opened from a link.
+  const selected =
+    selectedId === null ? undefined : datasetParks.find((p) => p.id === selectedId);
+  const selectedHidden = selected !== undefined && !matches.some((p) => p.id === selected.id);
+
   const listRef = useRef<HTMLElement>(null);
   const listHeadingRef = useRef<HTMLHeadingElement>(null);
   const detailsHeadingRef = useRef<HTMLHeadingElement>(null);
   const previousIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    document.title = selected ? `${selected.name} - Find a Park` : 'Find a Park';
+    document.title = selected ? `${stripMarkup(selected.name)} - Find a Park` : 'Find a Park';
   }, [selected]);
 
-  // Focus moves only after a user navigation (navigations > 0), never on load.
+  // Focus moves only after a user navigation (navigations > 0), never on load
+  // and never when a filter changes (filters do not count as navigations).
   useEffect(() => {
     if (navigations === 0) return;
     if (selectedId !== null) {
@@ -47,24 +80,94 @@ export function App({ parks }: { parks: Park[] }) {
     previousIdRef.current = selectedId;
   }, [selectedId]);
 
-  let announcement = '';
+  // ------------------------------------------------------------ announcements
+  // Filter changes announce the result count after a short pause. The message
+  // is remembered with the navigation count it belongs to, so a later
+  // navigation replaces it instead of being hidden by it.
+  const [filterMessage, setFilterMessage] = useState<{ text: string; at: number } | null>(null);
+  const navigationsRef = useRef(navigations);
+  const timerRef = useRef<number | undefined>(undefined);
+
+  useEffect(() => {
+    navigationsRef.current = navigations;
+  }, [navigations]);
+
+  useEffect(() => () => window.clearTimeout(timerRef.current), []);
+
+  const onFiltersChange = (next: Filters) => {
+    setQuery(serializeQuery(next, datasetName));
+
+    const count = applyFilters(datasetParks, next).matches.length;
+    let text: string;
+    if (activeFilterCount(next) === 0) text = `Showing all ${plural(count, 'park', 'parks')}`;
+    else if (count === 0) text = 'No parks match these filters';
+    else text = `${plural(count, 'park', 'parks')} found`;
+
+    window.clearTimeout(timerRef.current);
+    timerRef.current = window.setTimeout(() => {
+      setFilterMessage({ text, at: navigationsRef.current });
+    }, ANNOUNCE_DELAY_MS);
+  };
+
+  let navigationMessage = '';
   if (navigations > 0) {
-    if (selectedId === null) announcement = `Showing all ${parks.length} parks`;
-    else if (selected) announcement = `Showing details for ${selected.name}`;
+    if (selectedId === null) {
+      if (activeCount === 0) {
+        navigationMessage = `Showing all ${plural(matches.length, 'park', 'parks')}`;
+      } else if (matches.length === 0) {
+        navigationMessage = 'No parks match these filters';
+      } else {
+        navigationMessage = `${plural(matches.length, 'park', 'parks')} found`;
+      }
+    } else if (selected) {
+      navigationMessage = `Showing details for ${stripMarkup(selected.name)}`;
+    }
     // An unknown id is announced by the role="alert" message, not here, so it
     // is not read twice.
   }
+  const statusMessage =
+    filterMessage !== null && filterMessage.at === navigations
+      ? filterMessage.text
+      : navigationMessage;
+
+  // ---------------------------------------------------------------- selection
+  // Map markers select a park the same way list links do: by changing the
+  // hash. The query is kept so filters survive selecting a park.
+  const onSelectPark = useCallback(
+    (id: string) => {
+      window.location.hash = parkHref(id, query);
+    },
+    [query],
+  );
+
+  // A real navigation (not a filter edit): focus and announcement follow.
+  const switchDataset = () => {
+    window.location.hash = listHref(
+      serializeQuery(NO_FILTERS, showExtended ? 'sample' : 'extended'),
+    );
+  };
+
+  const resultText = `${matches.length} of ${plural(datasetParks.length, 'park', 'parks')}`;
+  const hoursNote =
+    unreadableHours > 0
+      ? `${plural(unreadableHours, 'park', 'parks')} not shown because ${
+          unreadableHours === 1 ? 'its hours are' : 'their hours are'
+        } missing or cannot be read as a time.`
+      : undefined;
 
   return (
     <>
-      {/* The hash is the selected park, so a plain #main link would clear it.
-          Focus main directly instead of navigating. */}
+      {/* The main content is the park list (or, with a park open, its
+          details), not the filters above it. The hash is the selected park, so
+          a plain anchor link would clear it: focus the target directly. When a
+          park is open the list may be hidden on phones, so go to the details. */}
       <a
         className="skip-link"
-        href="#main"
+        href="#park-list-heading"
         onClick={(event) => {
           event.preventDefault();
-          mainRef.current?.focus();
+          const target = selectedId !== null ? detailsHeadingRef : listHeadingRef;
+          target.current?.focus();
         }}
       >
         Skip to content
@@ -73,26 +176,57 @@ export function App({ parks }: { parks: Park[] }) {
       <header className="site-header">
         <div className="site-header-inner">
           <h1>Find a Park</h1>
-          <p>NYC sample parks</p>
+          <p>
+            {showExtended
+              ? 'Extended parks: synthetic test data (fictional parks, New Jersey area)'
+              : 'NYC sample parks'}
+          </p>
         </div>
       </header>
 
       <main
-        ref={mainRef}
         id="main"
-        tabIndex={-1}
         className={selectedId === null ? 'layout' : 'layout has-selection'}
       >
+        <FilterPanel
+          filters={filters}
+          amenityOptions={amenityOptions}
+          onChange={onFiltersChange}
+          resultText={resultText}
+          note={hoursNote}
+        />
+
         <nav ref={listRef} className="list-section" aria-labelledby="park-list-heading">
-          <ParkList parks={parks} selectedId={selectedId} headingRef={listHeadingRef} />
+          <ParkList
+            parks={matches}
+            selectedId={selectedId}
+            headingRef={listHeadingRef}
+            query={query}
+            emptyMessage={
+              activeCount > 0 ? 'No parks match these filters.' : 'No parks to show.'
+            }
+          />
+          {extendedParks !== undefined && (
+            <div className="dataset-switch">
+              <button type="button" onClick={switchDataset}>
+                {showExtended ? 'Back to sample parks' : 'Extended Parks'}
+              </button>
+              {!showExtended && (
+                <p className="hint">Opens extra test data: fictional parks in New Jersey.</p>
+              )}
+            </div>
+          )}
         </nav>
 
         <section className="details-section" aria-label="Park details">
           {selectedId === null && <p>Select a park from the list to see its details.</p>}
           {selectedId !== null && (
-            <a className="back-link" href="#/">
+            <a className="back-link" href={listHref(query)}>
               &larr; All parks
             </a>
+          )}
+          {selected && selectedHidden && (
+            <p className="note">This park does not match the current filters.</p>
           )}
           {selected && <ParkDetails park={selected} headingRef={detailsHeadingRef} />}
           {selectedId !== null && !selected && (
@@ -111,13 +245,13 @@ export function App({ parks }: { parks: Park[] }) {
           </h2>
           <p className="map-note">The list has the same parks as the map.</p>
           <MapBoundary>
-            <ParkMap parks={parks} selectedId={selectedId} onSelect={selectPark} />
+            <ParkMap parks={matches} selectedId={selectedId} onSelect={onSelectPark} />
           </MapBoundary>
         </section>
       </main>
 
       <div role="status" className="visually-hidden">
-        {announcement}
+        {statusMessage}
       </div>
     </>
   );

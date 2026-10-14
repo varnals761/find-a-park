@@ -52,8 +52,12 @@ Status key: `[x]` implemented and checked (see the verification record below),
       public tile server is not suitable for production traffic.
 
 ### Handling untrusted input
-- [x] Dataset text (names, descriptions, addresses, URLs) is rendered as plain
-      text (unit test with an HTML-looking description).
+- [x] Dataset text (names, descriptions, addresses, URLs) is rendered as text.
+      One owner-requested exception: exactly `<b>`, `</b>`, `<i>`, `</i>` (no
+      attributes) in the name, description and address are turned into React
+      elements by our own parser (`src/lib/inlineMarkup.ts`). `<script>`, `<img>`,
+      `<a>`, tags with attributes and unbalanced tags stay literal text. Covered by
+      unit and browser tests. No `innerHTML` and no sanitizer library is involved.
 - [x] No `dangerouslySetInnerHTML`, `innerHTML`, or `eval` in app source. Note:
       Leaflet itself uses `innerHTML` for its attribution control; the only
       string given to it is a constant in `ParkMap.tsx`, never dataset text.

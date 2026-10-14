@@ -5,6 +5,7 @@ import iconUrl from 'leaflet/dist/images/marker-icon.png';
 import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
 import { useEffect, useMemo, useRef } from 'react';
 import type { Park } from '../data/types';
+import { stripMarkup } from '../lib/inlineMarkup';
 
 type Props = {
   parks: Park[];
@@ -45,6 +46,9 @@ export function ParkMap({ parks, selectedId, onSelect }: Props) {
     [parks],
   );
 
+  if (parks.length === 0) {
+    return <p>No parks to show on the map.</p>;
+  }
   if (mappable.length === 0) {
     return <p>No parks have a map location.</p>;
   }
@@ -97,8 +101,8 @@ function LeafletMap({
       const marker = L.marker([park.coords.lat, park.coords.lng], {
         icon: normalIcon,
         // The accessible name says what activating the marker does.
-        alt: `${park.name}, show details`,
-        title: park.name,
+        alt: `${stripMarkup(park.name)}, show details`,
+        title: stripMarkup(park.name),
       });
       marker.on('click', () => onSelect(park.id));
       // Leaflet only maps Enter to a click for markers with popups, so a

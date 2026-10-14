@@ -82,6 +82,55 @@ None yet. No application code exists.
   expected reasons, then 161 unit tests pass; typecheck, lint, build, 27 e2e, `npm audit`
   clean. Not yet visible in the app: the dataset button and filters are the next stage.
 
+- Stage 9 (filters, URL state, dataset button, `feature/08-extra`): tests written first
+  (hours, filters, route helpers, FilterPanel, App behaviour; 20 failed for the expected
+  reasons). Final: 280 unit tests, 53 Playwright tests (Chromium, production build), typecheck,
+  lint, build clean. axe scans now include: filters active, no results, extended list,
+  very long text, HTML-looking text, all-null record, at desktop and 320px.
+  NOT verified: any real screen reader with the filter controls or the debounced count
+  announcement; real touch; how the filter panel reads on a real phone; the new CSS visually
+  (no screenshots were taken after the filter styling).
+
+## Owner-requested changes after stage 9 (skip link, markup, title clamp)
+- The skip link now goes to the park list (or the open park's details) instead of the
+  filters; the separate "Skip to park list" link was removed as redundant. Found by the owner
+  during a11y testing: the first version targeted `<main>`, whose first content is the filters.
+- `<b>`/`<i>` in names, descriptions and addresses are applied, by a small parser
+  (`src/lib/inlineMarkup.ts`) that builds React elements. This is an exception to the
+  "render as text" rule and is recorded in CLAUDE.md and SECURITY.md. Only exact `<b>`,
+  `</b>`, `<i>`, `</i>` are recognised; anything else, including unbalanced tags, stays
+  literal text (tested). I applied it to the address as well as the name and description,
+  because the owner's example record had markup in all three.
+- The raw tags would have leaked into three non-visual places, found by thinking through
+  where the name is used: `document.title`, the live-region announcement, and the map marker
+  names. Those use `stripMarkup()`. The list link also gets a `title` with the full name.
+- List titles are clamped to two lines in CSS (`-webkit-line-clamp`) on an inner span, not on
+  the link, because the link's padding would otherwise reveal a third line. A browser test
+  measures it in Chromium: clamped height is at most two lines and the long title is cut.
+- NOT verified: how `<b>`/`<i>` and the clamp are announced by real screen readers
+  (clamping is visual only; the full name is in the DOM); other browsers' line-clamp.
+
+## Real findings in stage 9
+- **Keyboard users had to Tab ~30 times to reach the list** once the filters (26 amenity
+  checkboxes in the sample) were placed above it. Found by an e2e test, fixed test-first with a
+  second skip link, "Skip to park list".
+- **One valid-looking wrong coordinate zooms the whole map out.** The extended file had a
+  swapped lat/lng record (in range, undetectable); `fitBounds` then spans to Antarctica.
+  Found by computing the data's bounds. The record was removed from the file (kept as an inline
+  unit test) and the limitation is listed as a known issue. Not fixed in code.
+- **"Open at" with an invalid time dropped unreadable-hours parks** instead of being inactive;
+  caught by a filters test and fixed.
+- **A half-typed time would have flipped the hours filter off** while typing, because filter
+  state is derived from the URL. The time input keeps a local draft and only commits valid
+  times.
+- **My test data was wrong twice** (a "no results" combination that matched Prospect Park;
+  a lost regex backslash in stage 8). The tests caught both.
+- A filter edit must not move focus. Filter state therefore changes through
+  `history.replaceState` plus a state update, not `hashchange`, so it never increments the
+  navigation counter that drives focus and announcements.
+- Decision (owner): "Dawn to dusk" = 6:00 AM to 6:00 PM for filtering only; displayed text
+  is unchanged. Size presets are minimums ("Small (5+)").
+
 ## Real finding: extended data exposed two latent bugs (stage 8)
 - Duplicate image URLs would have produced duplicate React keys in `ParkDetails`
   (`key={src}`); the normalizer now de-duplicates images.

@@ -153,6 +153,14 @@ describe('normalizePark: coordinates', () => {
     expect(park?.coords).toBeUndefined();
   });
 
+  it('cannot detect swapped lat/lng when both are in range (documented limitation)', () => {
+    // 40.7, -74.0 swapped is lat -74.0, lng 40.7: valid ranges, wrong place.
+    // Not in the extended file because one such park would zoom the map out
+    // to the whole world; it is pinned here so the limitation stays visible.
+    const park = normalizePark({ ...full, location: { lat: -74.0, lng: 40.7 } });
+    expect(park?.coords).toEqual({ lat: -74.0, lng: 40.7 });
+  });
+
   it('accepts boundary values and zero', () => {
     expect(normalizePark({ ...full, location: { lat: 90, lng: -180 } })?.coords).toEqual({
       lat: 90,

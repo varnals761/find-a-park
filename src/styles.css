@@ -62,6 +62,17 @@ p {
   margin: 0 0 var(--space);
 }
 
+/* Park text is untrusted and can be very long: wrap it, never overflow. */
+h1,
+h2,
+h3,
+p,
+li,
+a,
+dd {
+  overflow-wrap: anywhere;
+}
+
 /* ------------------------------------------------------------------- focus */
 /* One visible indicator for everything, including elements that receive focus
    from script (headings, main). Never removed without a replacement. */
@@ -141,7 +152,9 @@ p {
   padding: 1.5rem var(--space) 2.5rem;
 }
 
-.layout.has-selection .list-section {
+/* Filters act on the list, so they step aside with it on phones. */
+.layout.has-selection .list-section,
+.layout.has-selection .filters {
   display: none;
 }
 
@@ -154,14 +167,20 @@ p {
   .layout {
     grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr);
     grid-template-areas:
+      'filters filters'
       'list details'
       'list map';
     align-items: start;
   }
 
   .layout.has-selection .list-section,
+  .layout.has-selection .filters,
   .layout:not(.has-selection) .details-section {
     display: block;
+  }
+
+  .filters {
+    grid-area: filters;
   }
 
   .list-section {
@@ -201,6 +220,17 @@ p {
   font-weight: 600;
 }
 
+/* Long titles are cut at two lines with an ellipsis. Only the name is
+   clamped (the address is a sibling), and the wrapper is separate from the
+   link so the link's padding cannot reveal a third line. */
+.park-name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
 .park-list .address {
   display: block;
   padding: 0 0.75rem 0.625rem;
@@ -217,6 +247,121 @@ p {
 
 .park-list a[aria-current] {
   font-weight: 800;
+}
+
+/* ----------------------------------------------------------------- filters */
+.filters {
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 0 var(--space);
+}
+
+.filters > summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.75rem var(--space);
+}
+
+.filter-field label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.filter-field select,
+.filter-field input[type='time'] {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.5rem;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+}
+
+.hint {
+  margin: 0.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+
+.amenity-filter {
+  margin: var(--space) 0 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.amenity-filter legend {
+  padding: 0;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.amenity-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 0.25rem 1rem;
+}
+
+.amenity-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+}
+
+.amenity-option input {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: none;
+}
+
+.clear-filters,
+.dataset-switch button {
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  font: inherit;
+  font-weight: 600;
+  color: var(--link);
+  background: var(--bg);
+  border: 2px solid var(--link);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.clear-filters {
+  margin-top: var(--space);
+}
+
+.clear-filters:disabled {
+  color: var(--muted);
+  border-color: var(--border-strong);
+  cursor: default;
+}
+
+.results-summary {
+  margin: var(--space) 0 0;
+  font-weight: 600;
+}
+
+.filters .hint:last-child,
+.filters .results-summary:last-child {
+  margin-bottom: var(--space);
+}
+
+.dataset-switch {
+  margin-top: var(--space);
 }
 
 /* ----------------------------------------------------------------- details */

@@ -37,6 +37,10 @@ test('keyboard only: select from the list, see focus, and return', async ({ page
   const box = await skip.boundingBox();
   expect(box && box.x >= 0 && box.y >= 0).toBe(true);
 
+  // The filters come before the list; the skip link goes straight past them.
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('heading', { level: 2, name: /^Parks \(/ })).toBeFocused();
+
   await page.keyboard.press('Tab');
   const first = page.getByRole('link', { name: 'Cedar Hill Nature Preserve' });
   await expect(first).toBeFocused();

@@ -67,8 +67,10 @@ describe('App', () => {
 
     await user.tab(); // the skip link is the first tab stop
     expect(screen.getByRole('link', { name: /skip to content/i })).toHaveFocus();
-    await user.tab(); // then the first park link
-    expect(screen.getByRole('link', { name: 'Alpha Park' })).toHaveFocus();
+    // The filters come before the list, so tab through them to the first park.
+    const first = screen.getByRole('link', { name: 'Alpha Park' });
+    for (let i = 0; i < 30 && document.activeElement !== first; i += 1) await user.tab();
+    expect(first).toHaveFocus();
     await user.keyboard('{Enter}');
 
     const heading = await screen.findByRole('heading', { level: 2, name: 'Alpha Park' });
@@ -116,6 +118,195 @@ describe('App', () => {
   });
 });
 
+const filterParks: Park[] = [
+  {
+    id: 'a',
+    name: 'Alpha Park',
+    rating: 4.5,
+    acreage: 30,
+    hours: '24 hours',
+    amenities: ['trails', 'restrooms'],
+    images: [],
+  },
+  {
+    id: 'b',
+    name: 'Beta Green',
+    rating: 3,
+    acreage: 4,
+    hours: '6:00 AM - 10:00 PM',
+    amenities: ['playground'],
+    images: [],
+  },
+  {
+    id: 'c',
+    name: 'Gamma Field',
+    rating: 5,
+    acreage: 600,
+    hours: 'Dawn to dusk',
+    amenities: ['trails'],
+    images: [],
+  },
+  { id: 'd', name: 'Delta Lot', hours: 'Closed for renovation', amenities: [], images: [] },
+];
+
+const extendedFixture: Park[] = [
+  { id: 'x1', name: 'Extended One', amenities: [], images: [] },
+  { id: 'x2', name: 'Extended Two', amenities: ['wifi'], images: [] },
+];
+
+function listNames() {
+  const nav = screen.getByRole('navigation');
+  return within(nav)
+    .getAllByRole('link')
+    .map((a) => a.textContent);
+}
+
+describe('App filters', () => {
+  it('filters the list, updates the URL, announces the count, and keeps focus', async () => {
+    const user = userEvent.setup();
+    render(<App parks={filterParks} />);
+    const rating = screen.getByRole('combobox', { name: 'Rating' });
+
+    await user.selectOptions(rating, '4');
+
+    expect(listNames()).toEqual(['Alpha Park', 'Gamma Field']);
+    expect(screen.getByRole('heading', { level: 2, name: 'Parks (2)' })).toBeInTheDocument();
+    expect(window.location.hash).toBe('#/?rating=4');
+    expect(rating).toHaveFocus(); // filtering must not move focus
+    await waitFor(() => expect(status()).toHaveTextContent('2 parks found'), { timeout: 2000 });
+  });
+
+  it('uses "1 park found" in the singular', async () => {
+    const user = userEvent.setup();
+    render(<App parks={filterParks} />);
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Size' }), '500');
+    await waitFor(() => expect(status()).toHaveTextContent('1 park found'), { timeout: 2000 });
+  });
+
+  it('requires every selected amenity (AND)', async () => {
+    const user = userEvent.setup();
+    render(<App parks={filterParks} />);
+    await user.click(screen.getByRole('checkbox', { name: 'Trails' }));
+    expect(listNames()).toEqual(['Alpha Park', 'Gamma Field']);
+    await user.click(screen.getByRole('checkbox', { name: 'Restrooms' }));
+    expect(listNames()).toEqual(['Alpha Park']);
+    expect(window.location.hash).toBe('#/?amenity=restrooms&amenity=trails');
+  });
+
+  it('filters by hours: open at a time', async () => {
+    const user = userEvent.setup();
+    render(<App parks={filterParks} />);
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Hours' }), 'open-at');
+    // Default time is noon: 24h, 6-10 PM and dawn-dusk (6-6) are open.
+    expect(listNames()).toEqual(['Alpha Park', 'Beta Green', 'Gamma Field']);
+    expect(screen.getByText(/1 park not shown because its hours/i)).toBeInTheDocument();
+
+    const time = screen.getByLabelText('Time');
+    await user.clear(time);
+    await user.type(time, '20:00');
+    expect(listNames()).toEqual(['Alpha Park', 'Beta Green']);
+  });
+
+  it('shows a clear message and a way out when nothing matches', async () => {
+    const user = userEvent.setup();
+    render(<App parks={filterParks} />);
+    await user.click(screen.getByRole('checkbox', { name: 'Playground' }));
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Rating' }), '4');
+
+    expect(screen.getByText(/no parks match these filters/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Parks (0)' })).toBeInTheDocument();
+    await waitFor(() => expect(status()).toHaveTextContent(/no parks match/i), { timeout: 2000 });
+
+    await user.click(screen.getByRole('button', { name: /clear filters/i }));
+    expect(listNames()).toHaveLength(4);
+    expect(window.location.hash).toBe('#/');
+    expect(screen.getByRole('combobox', { name: 'Hours' })).toHaveFocus();
+  });
+
+  it('applies filters found in the URL on first load, with the controls reflecting them', () => {
+    window.history.replaceState(null, '', '/#/?rating=4&amenity=trails');
+    render(<App parks={filterParks} />);
+    expect(listNames()).toEqual(['Alpha Park', 'Gamma Field']);
+    expect(screen.getByRole('combobox', { name: 'Rating' })).toHaveValue('4');
+    expect(screen.getByRole('checkbox', { name: 'Trails' })).toBeChecked();
+    expect(status()).toBeEmptyDOMElement(); // nothing announced on load
+  });
+
+  it('keeps filters in list links, and a selected park the filters hide still shows', () => {
+    window.history.replaceState(null, '', '/#/parks/b?rating=4');
+    render(<App parks={filterParks} />);
+
+    expect(screen.getByRole('link', { name: 'Alpha Park' })).toHaveAttribute(
+      'href',
+      '#/parks/a?rating=4',
+    );
+    expect(screen.getByRole('heading', { level: 2, name: 'Beta Green' })).toBeInTheDocument();
+    expect(screen.getByText(/does not match the current filters/i)).toBeInTheDocument();
+    expect(listNames()).toEqual(['Alpha Park', 'Gamma Field']);
+  });
+
+  it('the back link keeps the filters', () => {
+    window.history.replaceState(null, '', '/#/parks/a?rating=4');
+    render(<App parks={filterParks} />);
+    expect(screen.getByRole('link', { name: /all parks/i })).toHaveAttribute('href', '#/?rating=4');
+  });
+
+  it('invalid values in the URL are ignored rather than breaking the page', () => {
+    window.history.replaceState(null, '', '/#/?rating=banana&size=-1&hours=lol&data=nope');
+    render(<App parks={filterParks} />);
+    expect(listNames()).toHaveLength(4);
+  });
+});
+
+describe('App dataset button', () => {
+  it('is not shown when there is no extended dataset', () => {
+    render(<App parks={filterParks} />);
+    expect(screen.queryByRole('button', { name: /extended parks/i })).not.toBeInTheDocument();
+  });
+
+  it('sits at the bottom of the parks list and switches datasets', async () => {
+    const user = userEvent.setup();
+    render(<App parks={filterParks} extendedParks={extendedFixture} />);
+
+    const nav = screen.getByRole('navigation');
+    const button = within(nav).getByRole('button', { name: 'Extended Parks' });
+    expect(nav.lastElementChild).toContainElement(button);
+
+    await user.click(button);
+
+    await waitFor(() => expect(listNames()).toEqual(['Extended One', 'Extended Two']));
+    expect(window.location.hash).toBe('#/?data=extended');
+    expect(screen.getByText(/synthetic test data/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /back to sample parks/i })).toBeInTheDocument();
+    await waitFor(() => expect(status()).toHaveTextContent('Showing all 2 parks'));
+
+    await user.click(screen.getByRole('button', { name: /back to sample parks/i }));
+    await waitFor(() => expect(listNames()).toHaveLength(4));
+    expect(window.location.hash).toBe('#/');
+  });
+
+  it('clears filters when the dataset changes, since amenities differ', async () => {
+    const user = userEvent.setup();
+    window.history.replaceState(null, '', '/#/?rating=4');
+    render(<App parks={filterParks} extendedParks={extendedFixture} />);
+    await user.click(screen.getByRole('button', { name: 'Extended Parks' }));
+    await waitFor(() => expect(window.location.hash).toBe('#/?data=extended'));
+    expect(screen.getByRole('combobox', { name: 'Rating' })).toHaveValue('');
+  });
+
+  it('loads the extended dataset from the URL', () => {
+    window.history.replaceState(null, '', '/#/?data=extended');
+    render(<App parks={filterParks} extendedParks={extendedFixture} />);
+    expect(listNames()).toEqual(['Extended One', 'Extended Two']);
+  });
+
+  it('uses the sample dataset when the URL asks for extended but none exists', () => {
+    window.history.replaceState(null, '', '/#/?data=extended');
+    render(<App parks={filterParks} />);
+    expect(listNames()).toHaveLength(4);
+  });
+});
+
 describe('App landmarks and skip link', () => {
   it('has header, a named navigation for the list, and a main landmark with id', () => {
     render(<App parks={parks} />);
@@ -135,7 +326,29 @@ describe('App landmarks and skip link', () => {
     }
   });
 
-  it('skip link moves focus to main without touching the selection or the hash', async () => {
+  it('the skip link goes straight to the park list, past the filters', async () => {
+    const user = userEvent.setup();
+    window.history.replaceState(null, '', '/#/?rating=4');
+    render(<App parks={filterParks} />);
+
+    await user.tab();
+    const skip = screen.getByRole('link', { name: /skip to content/i });
+    expect(skip).toHaveFocus();
+    await user.keyboard('{Enter}');
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Parks (2)' })).toHaveFocus();
+    expect(window.location.hash).toBe('#/?rating=4'); // filters untouched
+    expect(status()).toBeEmptyDOMElement();
+    await user.tab();
+    expect(screen.getByRole('link', { name: 'Alpha Park' })).toHaveFocus();
+  });
+
+  it('there is only one skip link', () => {
+    render(<App parks={filterParks} />);
+    expect(screen.getAllByRole('link', { name: /skip to/i })).toHaveLength(1);
+  });
+
+  it('with a park open, the skip link goes to its details (the list may be hidden)', async () => {
     const user = userEvent.setup();
     window.history.replaceState(null, '', '/#/parks/alpha');
     render(<App parks={parks} />);
@@ -143,7 +356,7 @@ describe('App landmarks and skip link', () => {
     await user.tab();
     await user.keyboard('{Enter}');
 
-    expect(screen.getByRole('main')).toHaveFocus();
+    expect(screen.getByRole('heading', { level: 2, name: 'Alpha Park' })).toHaveFocus();
     expect(window.location.hash).toBe('#/parks/alpha');
     expect(screen.getByRole('heading', { level: 2, name: 'Alpha Park' })).toBeInTheDocument();
     expect(status()).toBeEmptyDOMElement();

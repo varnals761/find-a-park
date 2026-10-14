@@ -419,26 +419,6 @@
   },
   {
     "description": "Synthetic test park.",
-    "id": "swapped-coords-test-park",
-    "name": "Swapped Coordinates Test Park",
-    "location": {
-      "lat": -74,
-      "lng": 40.7,
-      "address": "1700 Example Ave, Jersey City, NJ"
-    },
-    "amenities": [
-      "trails"
-    ],
-    "hours": "9:00 AM - 5:00 PM",
-    "acreage": 5,
-    "rating": 4,
-    "images": [
-      "https://images.example.com/sw-1.jpg"
-    ],
-    "_case": "latitude and longitude swapped but both in range: cannot be detected by range checks (documented limitation)"
-  },
-  {
-    "description": "Synthetic test park.",
     "id": "no-location-test-park",
     "name": "No Location Test Park",
     "amenities": [

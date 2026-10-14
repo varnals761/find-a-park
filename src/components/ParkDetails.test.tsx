@@ -64,13 +64,39 @@ describe('ParkDetails', () => {
     expect(screen.getByText(/not shown on the map/i)).toBeInTheDocument();
   });
 
-  it('renders text as text, never as HTML', () => {
+  it('renders only plain <b> and <i> as markup; everything else stays text', () => {
     const { container } = show({
       ...sparse,
-      description: '<img src=x onerror="alert(1)"><b>bold</b>',
+      description: '<img src=x onerror="alert(1)"><b>bold</b> and <i>italic</i>',
     });
-    expect(container.querySelector('b')).toBeNull();
     expect(container.querySelector('img')).toBeNull();
-    expect(screen.getByText('<img src=x onerror="alert(1)"><b>bold</b>')).toBeInTheDocument();
+    expect(container.querySelector('b')).toHaveTextContent('bold');
+    expect(container.querySelector('i')).toHaveTextContent('italic');
+    expect(container).toHaveTextContent('<img src=x onerror="alert(1)">bold and italic');
+  });
+
+  it('keeps scripts, links and tags with attributes as literal text', () => {
+    const { container } = show({
+      ...sparse,
+      name: '<b>Bold</b> Test Park',
+      description: "<script>alert('x')</script><a href=\"https://e.example\">go</a><b onclick=\"x()\">y</b>",
+      address: '1400 <i>Example</i> St',
+    });
+    expect(container.querySelector('script')).toBeNull();
+    expect(container.querySelector('a')).toBeNull();
+    expect(container.querySelectorAll('b')).toHaveLength(1); // only the name's <b>
+    expect(container).toHaveTextContent("<script>alert('x')</script>");
+    expect(container).toHaveTextContent('<b onclick="x()">y</b>');
+  });
+
+  it('applies <b> and <i> in the name and the address', () => {
+    show({
+      ...sparse,
+      name: '<b>Bold</b> Test Park',
+      address: '1400 <i>Example</i> St, Elizabeth, NJ',
+    });
+    const heading = screen.getByRole('heading', { level: 2, name: 'Bold Test Park' });
+    expect(heading.querySelector('b')).toHaveTextContent('Bold');
+    expect(screen.getByText('Example').tagName).toBe('I');
   });
 });

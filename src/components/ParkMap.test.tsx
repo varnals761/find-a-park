@@ -69,6 +69,19 @@ describe('ParkMap', () => {
     expect(container.querySelector('.leaflet-container')).toBeNull();
   });
 
+  it('gives markers a plain-text name even when the park name has markup', () => {
+    render(
+      <ParkMap
+        parks={[
+          { id: 'm', name: '<b>Bold</b> Test Park', coords: { lat: 40.7, lng: -74 }, amenities: [], images: [] },
+        ]}
+        selectedId={null}
+        onSelect={() => {}}
+      />,
+    );
+    expect(screen.getByAltText('Bold Test Park, show details')).toBeInTheDocument();
+  });
+
   it('gives every attribution link rel="noopener noreferrer"', () => {
     const { container } = render(<ParkMap parks={parks} selectedId={null} onSelect={() => {}} />);
     const links = container.querySelectorAll('.leaflet-control-attribution a');

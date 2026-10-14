@@ -32,6 +32,30 @@ describe('ParkList', () => {
     expect(screen.getByRole('link', { name: 'Alpha Park' })).not.toHaveAttribute('aria-current');
   });
 
+  it('renders <b>/<i> in names and addresses, with a clean accessible name', () => {
+    render(
+      <ParkList
+        parks={[
+          { id: 'x', name: '<b>Bold</b> Test Park', address: '1 <i>Main</i> St', amenities: [], images: [] },
+        ]}
+        selectedId={null}
+        headingRef={createRef()}
+      />,
+    );
+    const link = screen.getByRole('link', { name: 'Bold Test Park' });
+    expect(link.querySelector('b')).toHaveTextContent('Bold');
+    expect(link).toHaveAttribute('title', 'Bold Test Park');
+    expect(screen.getByText('Main').tagName).toBe('I');
+  });
+
+  it('wraps the name in an element the stylesheet can clamp to two lines', () => {
+    show(null);
+    const link = screen.getByRole('link', { name: 'Alpha Park' });
+    expect(link.querySelector('.park-name')).toHaveTextContent('Alpha Park');
+    // The address is outside the clamped element, so only the title is cut.
+    expect(link.querySelector('.park-name')?.textContent).not.toContain('1 Main St');
+  });
+
   it('shows the address only when there is one', () => {
     show(null);
     expect(screen.getByText('1 Main St')).toBeInTheDocument();

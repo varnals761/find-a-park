@@ -33,6 +33,12 @@ const views: [string, string][] = [
   ['details, no images or rating', '/#/parks/cedar-hill-nature-preserve'],
   ['details, no address', '/#/parks/highland-dog-park'],
   ['park not found', '/#/parks/nope'],
+  ['filters active', '/#/?hours=open-at&time=20%3A00&rating=4&amenity=trails'],
+  ['filters with no results', '/#/?rating=4.5&size=100&amenity=cafe'],
+  ['extended list', '/#/?data=extended'],
+  ['extended, very long text', '/#/parks/lakewood-test-long-text-park?data=extended'],
+  ['extended, html-looking text', '/#/parks/elizabeth-test-html-park?data=extended'],
+  ['extended, all optional fields null', '/#/parks/hackensack-test-green?data=extended'],
 ];
 
 for (const [label, url] of views) {

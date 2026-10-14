@@ -14,8 +14,8 @@ const byId = (id: string) => {
 };
 
 describe('extended dataset: overall', () => {
-  it('loads 27 parks and skips 9 invalid entries', () => {
-    expect(parks).toHaveLength(27);
+  it('loads 26 parks and skips 9 invalid entries', () => {
+    expect(parks).toHaveLength(26);
     expect(skipped).toBe(9);
   });
 
@@ -188,10 +188,6 @@ describe('extended dataset: coordinates', () => {
     'null-location-test-park',
   ])('%s stays in the list but has no coordinates', (id) => {
     expect(byId(id).coords).toBeUndefined();
-  });
-
-  it('keeps swapped but in-range coordinates as given (documented limitation)', () => {
-    expect(byId('swapped-coords-test-park').coords).toEqual({ lat: -74, lng: 40.7 });
   });
 
   it('hackensack-test-green (all optional fields null) is still mappable', () => {

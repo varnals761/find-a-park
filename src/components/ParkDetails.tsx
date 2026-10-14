@@ -1,6 +1,7 @@
-import type { RefObject } from 'react';
+import type { ReactNode, RefObject } from 'react';
 import type { Park } from '../data/types';
 import { amenityLabel } from '../lib/amenityLabel';
+import { InlineMarkup } from './InlineMarkup';
 import { ParkImage } from './ParkImage';
 
 type Props = { park: Park; headingRef: RefObject<HTMLHeadingElement | null> };
@@ -8,8 +9,10 @@ type Props = { park: Park; headingRef: RefObject<HTMLHeadingElement | null> };
 // Every field is optional: a row or section is rendered only when its value is
 // present. Nothing is substituted for missing data.
 export function ParkDetails({ park, headingRef }: Props) {
-  const facts: { label: string; value: string }[] = [];
-  if (park.address !== undefined) facts.push({ label: 'Address', value: park.address });
+  const facts: { label: string; value: ReactNode }[] = [];
+  if (park.address !== undefined) {
+    facts.push({ label: 'Address', value: <InlineMarkup text={park.address} /> });
+  }
   if (park.hours !== undefined) facts.push({ label: 'Hours', value: park.hours });
   if (park.acreage !== undefined) facts.push({ label: 'Acreage', value: String(park.acreage) });
   if (park.rating !== undefined) facts.push({ label: 'Rating', value: `${park.rating} out of 5` });
@@ -17,10 +20,14 @@ export function ParkDetails({ park, headingRef }: Props) {
   return (
     <article>
       <h2 ref={headingRef} tabIndex={-1}>
-        {park.name}
+        <InlineMarkup text={park.name} />
       </h2>
 
-      {park.description !== undefined && <p>{park.description}</p>}
+      {park.description !== undefined && (
+        <p>
+          <InlineMarkup text={park.description} />
+        </p>
+      )}
 
       {facts.length > 0 && (
         <dl className="facts">

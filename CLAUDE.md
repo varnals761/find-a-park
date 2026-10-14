@@ -38,6 +38,8 @@ proposing anything. Do not assume facts that are not in those files.
 - The list and details are the primary path. The map is an enhancement and the
   app must work fully with the map unavailable and without geolocation.
 - Park text is untrusted: render as text. Never `dangerouslySetInnerHTML`.
+  One owner-approved exception: plain `<b>` and `<i>` (no attributes) are turned
+  into React elements by `src/lib/inlineMarkup.ts`; everything else stays text.
 
 ## Accessibility rules (target: WCAG 2.2 AA)
 - Semantic HTML first: real lists, headings in order, links/buttons, landmarks.
