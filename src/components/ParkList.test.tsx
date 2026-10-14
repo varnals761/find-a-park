@@ -56,6 +56,25 @@ describe('ParkList', () => {
     expect(link.querySelector('.park-name')?.textContent).not.toContain('1 Main St');
   });
 
+  it('shows a distance under each park that has one, and nothing for parks without', () => {
+    render(
+      <ParkList
+        parks={parks}
+        selectedId={null}
+        headingRef={createRef()}
+        distances={new Map([['a', 2.34]])}
+      />,
+    );
+    const items = screen.getAllByRole('listitem');
+    expect(items[0]).toHaveTextContent('2.3 mi away');
+    expect(items[1]).not.toHaveTextContent('mi away');
+  });
+
+  it('shows no distances when none are given', () => {
+    show(null);
+    expect(screen.queryByText(/mi away/)).not.toBeInTheDocument();
+  });
+
   it('shows the address only when there is one', () => {
     show(null);
     expect(screen.getByText('1 Main St')).toBeInTheDocument();

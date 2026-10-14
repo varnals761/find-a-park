@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Park } from '../data/types';
+import { distanceMiles, sortByDistance } from '../lib/distance';
 import {
   activeFilterCount,
   applyFilters,
@@ -12,6 +13,7 @@ import { stripMarkup } from '../lib/inlineMarkup';
 import { listHref, parkHref, useHashRoute } from '../lib/useHashRoute';
 import { FilterPanel } from './FilterPanel';
 import { MapBoundary } from './MapBoundary';
+import { NearMePanel, type Origin } from './NearMePanel';
 import { ParkDetails } from './ParkDetails';
 import { ParkList } from './ParkList';
 import { ParkMap } from './ParkMap';
@@ -44,11 +46,35 @@ export function App({ parks, extendedParks }: Props) {
   const activeCount = activeFilterCount(filters);
   const amenityOptions = useMemo(() => availableAmenities(datasetParks), [datasetParks]);
 
+  // ----------------------------------------------------------------- near me
+  // The starting point lives in memory only: never in the URL, never stored.
+  const [origin, setOrigin] = useState<Origin | null>(null);
+  const [pickMode, setPickMode] = useState(false);
+
+  const ranked = useMemo(
+    () => (origin === null ? null : sortByDistance(matches, origin)),
+    [matches, origin],
+  );
+  // The list is nearest-first once there is a starting point. The map is given
+  // `matches` (not the re-sorted list) so its markers are not rebuilt.
+  const listParks = ranked === null ? matches : ranked.map((r) => r.park);
+  const distances = useMemo(() => {
+    const byId = new Map<string, number>();
+    for (const item of ranked ?? []) {
+      if (item.miles !== undefined) byId.set(item.park.id, item.miles);
+    }
+    return byId;
+  }, [ranked]);
+
   // Details come from the whole dataset, so a park the filters hide can still
   // be opened from a link.
   const selected =
     selectedId === null ? undefined : datasetParks.find((p) => p.id === selectedId);
   const selectedHidden = selected !== undefined && !matches.some((p) => p.id === selected.id);
+  const selectedMiles =
+    origin !== null && selected?.coords !== undefined
+      ? distanceMiles(origin, selected.coords)
+      : undefined;
 
   const listRef = useRef<HTMLElement>(null);
   const listHeadingRef = useRef<HTMLHeadingElement>(null);
@@ -60,7 +86,7 @@ export function App({ parks, extendedParks }: Props) {
   }, [selected]);
 
   // Focus moves only after a user navigation (navigations > 0), never on load
-  // and never when a filter changes (filters do not count as navigations).
+  // and never when a filter or the starting point changes (not navigations).
   useEffect(() => {
     if (navigations === 0) return;
     if (selectedId !== null) {
@@ -81,10 +107,11 @@ export function App({ parks, extendedParks }: Props) {
   }, [selectedId]);
 
   // ------------------------------------------------------------ announcements
-  // Filter changes announce the result count after a short pause. The message
-  // is remembered with the navigation count it belongs to, so a later
-  // navigation replaces it instead of being hidden by it.
-  const [filterMessage, setFilterMessage] = useState<{ text: string; at: number } | null>(null);
+  // Changes the person makes in place (filters, starting point) are announced
+  // through the live region. The message is remembered with the navigation
+  // count it belongs to, so a later navigation replaces it instead of being
+  // hidden by it.
+  const [liveMessage, setLiveMessage] = useState<{ text: string; at: number } | null>(null);
   const navigationsRef = useRef(navigations);
   const timerRef = useRef<number | undefined>(undefined);
 
@@ -94,6 +121,13 @@ export function App({ parks, extendedParks }: Props) {
 
   useEffect(() => () => window.clearTimeout(timerRef.current), []);
 
+  const announce = useCallback((text: string, delayMs: number) => {
+    window.clearTimeout(timerRef.current);
+    timerRef.current = window.setTimeout(() => {
+      setLiveMessage({ text, at: navigationsRef.current });
+    }, delayMs);
+  }, []);
+
   const onFiltersChange = (next: Filters) => {
     setQuery(serializeQuery(next, datasetName));
 
@@ -102,12 +136,28 @@ export function App({ parks, extendedParks }: Props) {
     if (activeFilterCount(next) === 0) text = `Showing all ${plural(count, 'park', 'parks')}`;
     else if (count === 0) text = 'No parks match these filters';
     else text = `${plural(count, 'park', 'parks')} found`;
-
-    window.clearTimeout(timerRef.current);
-    timerRef.current = window.setTimeout(() => {
-      setFilterMessage({ text, at: navigationsRef.current });
-    }, ANNOUNCE_DELAY_MS);
+    announce(text, ANNOUNCE_DELAY_MS);
   };
+
+  const onOriginChange = useCallback(
+    (next: Origin | null) => {
+      setOrigin(next);
+      setPickMode(false);
+      if (next === null) announce('Parks sorted alphabetically', 0);
+      else {
+        announce(
+          `Parks sorted by distance from your ${next.source === 'device' ? 'location' : 'starting point'}`,
+          0,
+        );
+      }
+    },
+    [announce],
+  );
+
+  const onPick = useCallback(
+    (lat: number, lng: number) => onOriginChange({ lat, lng, source: 'map' }),
+    [onOriginChange],
+  );
 
   let navigationMessage = '';
   if (navigations > 0) {
@@ -126,9 +176,7 @@ export function App({ parks, extendedParks }: Props) {
     // is not read twice.
   }
   const statusMessage =
-    filterMessage !== null && filterMessage.at === navigations
-      ? filterMessage.text
-      : navigationMessage;
+    liveMessage !== null && liveMessage.at === navigations ? liveMessage.text : navigationMessage;
 
   // ---------------------------------------------------------------- selection
   // Map markers select a park the same way list links do: by changing the
@@ -188,20 +236,29 @@ export function App({ parks, extendedParks }: Props) {
         id="main"
         className={selectedId === null ? 'layout' : 'layout has-selection'}
       >
-        <FilterPanel
-          filters={filters}
-          amenityOptions={amenityOptions}
-          onChange={onFiltersChange}
-          resultText={resultText}
-          note={hoursNote}
-        />
+        <div className="top-panels">
+          <FilterPanel
+            filters={filters}
+            amenityOptions={amenityOptions}
+            onChange={onFiltersChange}
+            resultText={resultText}
+            note={hoursNote}
+          />
+          <NearMePanel
+            origin={origin}
+            onOriginChange={onOriginChange}
+            pickMode={pickMode}
+            onPickModeChange={setPickMode}
+          />
+        </div>
 
         <nav ref={listRef} className="list-section" aria-labelledby="park-list-heading">
           <ParkList
-            parks={matches}
+            parks={listParks}
             selectedId={selectedId}
             headingRef={listHeadingRef}
             query={query}
+            distances={distances}
             emptyMessage={
               activeCount > 0 ? 'No parks match these filters.' : 'No parks to show.'
             }
@@ -228,7 +285,13 @@ export function App({ parks, extendedParks }: Props) {
           {selected && selectedHidden && (
             <p className="note">This park does not match the current filters.</p>
           )}
-          {selected && <ParkDetails park={selected} headingRef={detailsHeadingRef} />}
+          {selected && (
+            <ParkDetails
+              park={selected}
+              headingRef={detailsHeadingRef}
+              distanceMiles={selectedMiles}
+            />
+          )}
           {selectedId !== null && !selected && (
             <>
               <h2 ref={detailsHeadingRef} tabIndex={-1}>
@@ -245,7 +308,14 @@ export function App({ parks, extendedParks }: Props) {
           </h2>
           <p className="map-note">The list has the same parks as the map.</p>
           <MapBoundary>
-            <ParkMap parks={matches} selectedId={selectedId} onSelect={onSelectPark} />
+            <ParkMap
+              parks={matches}
+              selectedId={selectedId}
+              onSelect={onSelectPark}
+              origin={origin}
+              pickMode={pickMode}
+              onPick={onPick}
+            />
           </MapBoundary>
         </section>
       </main>

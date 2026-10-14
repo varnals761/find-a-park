@@ -11,6 +11,11 @@ type Props = {
   parks: Park[];
   selectedId: string | null;
   onSelect: (id: string) => void;
+  /** The "near me" starting point, drawn as a plain dot. Not a control. */
+  origin?: { lat: number; lng: number } | null;
+  /** While true, a click on the map (not on a park) reports a point. */
+  pickMode?: boolean;
+  onPick?: (lat: number, lng: number) => void;
 };
 
 type MappablePark = Park & { coords: NonNullable<Park['coords']> };
@@ -30,6 +35,10 @@ const normalIcon = L.icon({
   iconAnchor: [12, 41],
   shadowSize: [41, 41],
 });
+// A DOM icon (not an SVG/canvas circle), styled in CSS. It is decoration for
+// sighted users: the starting point is described in text in the Near me panel.
+const originIcon = L.divIcon({ className: 'origin-marker', iconSize: [18, 18], html: '' });
+
 const selectedIcon = L.icon({
   iconUrl,
   iconRetinaUrl,
@@ -40,7 +49,7 @@ const selectedIcon = L.icon({
   className: 'marker-selected',
 });
 
-export function ParkMap({ parks, selectedId, onSelect }: Props) {
+export function ParkMap({ parks, selectedId, onSelect, origin, pickMode, onPick }: Props) {
   const mappable = useMemo(
     () => parks.filter((park): park is MappablePark => park.coords !== undefined),
     [parks],
@@ -52,7 +61,16 @@ export function ParkMap({ parks, selectedId, onSelect }: Props) {
   if (mappable.length === 0) {
     return <p>No parks have a map location.</p>;
   }
-  return <LeafletMap parks={mappable} selectedId={selectedId} onSelect={onSelect} />;
+  return (
+    <LeafletMap
+      parks={mappable}
+      selectedId={selectedId}
+      onSelect={onSelect}
+      origin={origin ?? null}
+      pickMode={pickMode ?? false}
+      onPick={onPick}
+    />
+  );
 }
 
 function prefersReducedMotion(): boolean {
@@ -63,10 +81,16 @@ function LeafletMap({
   parks,
   selectedId,
   onSelect,
+  origin,
+  pickMode,
+  onPick,
 }: {
   parks: MappablePark[];
   selectedId: string | null;
   onSelect: (id: string) => void;
+  origin: { lat: number; lng: number } | null;
+  pickMode: boolean;
+  onPick: ((lat: number, lng: number) => void) | undefined;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -150,5 +174,36 @@ function LeafletMap({
     }
   }, [parks, selectedId]);
 
-  return <div ref={containerRef} className="map" />;
+  // 4. The starting point ("near me"): a non-interactive dot, hidden from
+  // assistive technology (it is described in text in the Near me panel).
+  const originLat = origin?.lat;
+  const originLng = origin?.lng;
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || originLat === undefined || originLng === undefined) return;
+    const marker = L.marker([originLat, originLng], {
+      icon: originIcon,
+      interactive: false,
+      keyboard: false,
+      zIndexOffset: 2000,
+    }).addTo(map);
+    marker.getElement()?.setAttribute('aria-hidden', 'true');
+    return () => {
+      marker.remove();
+    };
+  }, [originLat, originLng]);
+
+  // 5. Pick a starting point by clicking the map, only while pick mode is on.
+  // A click on a park marker does not reach this handler: it selects the park.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !pickMode || !onPick) return;
+    const handler = (event: L.LeafletMouseEvent) => onPick(event.latlng.lat, event.latlng.lng);
+    map.on('click', handler);
+    return () => {
+      map.off('click', handler);
+    };
+  }, [pickMode, onPick]);
+
+  return <div ref={containerRef} className={pickMode ? 'map map-picking' : 'map'} />;
 }

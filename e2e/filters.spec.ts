@@ -29,20 +29,46 @@ test('a filtered URL is shareable: opening it in a fresh page restores the same 
   browser,
 }) => {
   await page.goto('/');
-  await page.getByRole('combobox', { name: 'Size' }).selectOption('100');
+  await page.getByRole('combobox', { name: 'Size' }).selectOption('xlarge');
   await page.getByRole('checkbox', { name: 'Trails' }).check();
-  await expect(listLinks(page)).toHaveCount(3);
+  await expect(listLinks(page)).toHaveCount(2);
   const url = page.url();
-  expect(url).toMatch(/#\/\?size=100&amenity=trails$/);
+  expect(url).toMatch(/#\/\?size=xlarge&amenity=trails$/);
 
   const fresh = await (await browser.newContext()).newPage();
   await blockExternal(fresh);
   await fresh.goto(url);
-  await expect(listLinks(fresh)).toHaveCount(3);
-  await expect(fresh.getByRole('combobox', { name: 'Size' })).toHaveValue('100');
+  await expect(listLinks(fresh)).toHaveCount(2);
+  await expect(fresh.getByRole('combobox', { name: 'Size' })).toHaveValue('xlarge');
   await expect(fresh.getByRole('checkbox', { name: 'Trails' })).toBeChecked();
   // Nothing is announced just because a page loaded.
   await expect(status(fresh)).toHaveText('');
+});
+
+test('size buckets do not overlap: each park is in exactly one', async ({ page }) => {
+  const expected: [string, number][] = [
+    ['tiny', 2],
+    ['small', 3],
+    ['medium', 4],
+    ['large', 1],
+    ['xlarge', 2],
+  ];
+  let total = 0;
+  for (const [bucket, count] of expected) {
+    await page.goto('/#/?size=' + bucket);
+    await page.reload();
+    await expect(listLinks(page), bucket).toHaveCount(count);
+    total += count;
+  }
+  expect(total).toBe(12);
+
+  // A Medium park (Riverside Commons, 91 acres) is only in the Medium bucket.
+  await page.goto('/#/?size=large');
+  await page.reload();
+  await expect(page.getByRole('link', { name: 'Riverside Commons' })).toHaveCount(0);
+  await page.goto('/#/?size=medium');
+  await page.reload();
+  await expect(page.getByRole('link', { name: 'Riverside Commons' })).toHaveCount(1);
 });
 
 test('amenities combine with AND', async ({ page }) => {
@@ -75,7 +101,7 @@ test('hours: the dawn-to-dusk assumption is stated, and unreadable hours are rep
 test('no results: clear message, Parks (0), and Clear filters restores focus and the list', async ({
   page,
 }) => {
-  await page.goto('/#/?rating=4.5&size=100&amenity=cafe');
+  await page.goto('/#/?rating=4.5&size=large&amenity=cafe');
   await expect(page.getByText('No parks match these filters.')).toBeVisible();
   await expect(page.getByRole('heading', { level: 2, name: 'Parks (0)' })).toBeVisible();
 

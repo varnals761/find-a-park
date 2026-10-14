@@ -1,5 +1,6 @@
 import type { RefObject } from 'react';
 import type { Park } from '../data/types';
+import { formatMiles } from '../lib/distance';
 import { stripMarkup } from '../lib/inlineMarkup';
 import { parkHref } from '../lib/useHashRoute';
 import { InlineMarkup } from './InlineMarkup';
@@ -11,6 +12,8 @@ type Props = {
   /** Current query ("" or "?a=b"), kept on links so filters survive selection. */
   query?: string;
   emptyMessage?: string;
+  /** Straight-line miles by park id; parks not in the map show no distance. */
+  distances?: Map<string, number>;
 };
 
 export function ParkList({
@@ -19,6 +22,7 @@ export function ParkList({
   headingRef,
   query = '',
   emptyMessage = 'No parks to show.',
+  distances,
 }: Props) {
   return (
     <>
@@ -46,6 +50,11 @@ export function ParkList({
               {park.address !== undefined && (
                 <span className="address">
                   <InlineMarkup text={park.address} />
+                </span>
+              )}
+              {distances?.has(park.id) === true && (
+                <span className="distance">
+                  {formatMiles(distances.get(park.id) ?? 0)} away
                 </span>
               )}
             </li>

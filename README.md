@@ -32,13 +32,22 @@ OpenStreetMap tile server.
 ## What works
 - **Filters** (added after the core was verified, so beyond the brief's core
   scope): hours (any / open 24 hours / dawn to dusk / open at a time), minimum
-  rating, size presets (Small 5+, Medium 25+, Large 100+, Very large 500+ acres),
+  rating, size buckets that do not overlap (Tiny under 5, Small 5-25, Medium 25-100,
+  Large 100-500, Very large 500+ acres),
   and amenities (a park must have **all** selected). They stack, update the list
   and the map, and are kept in the URL, so a filtered view is shareable. The
   count ("5 parks found") is announced to screen readers; focus never moves
   because a filter changed.
 - **Extended Parks** button at the bottom of the list: switches to
   `assets/extended-parks.sample.json`, synthetic test data (see Data).
+- **Near me** (opt-in, a second enhancement beyond the core): sort parks by
+  straight-line distance from a starting point. The starting point comes from
+  one of three places: the device location (only after pressing "Use my
+  location"), a click or tap on the map ("Choose a point on the map"), or typed
+  latitude and longitude. Distances are shown in miles in the list and details.
+  If location is denied, unavailable or times out, a message explains why and
+  the other two ways still work. The starting point stays in the page's memory
+  only: it is not in the URL, not stored, and not sent in any request.
 - **List** of all parks (alphabetical). Real links, so it works with no map and
   no JavaScript-heavy interaction. Selecting a park opens its details.
 - **Details**: name, description, address, hours, acreage, rating, amenities,
@@ -58,8 +67,9 @@ OpenStreetMap tile server.
 - **No location needed**: the app never asks for geolocation.
 
 ## What I left out, and why
-- Text search and "near me" (sorting by distance): optional in the brief and
-  not built yet.
+- Text search, and looking up an address: an address lookup needs a
+  third-party geocoding service, which would send what the person types to
+  another company and conflict with the privacy statements in `SECURITY.md`.
 - Marker clustering: extra dependency, and only 12 parks.
 - A real "open now": hours are free text and are always **displayed** exactly
   as given. They are only interpreted for the hours filter, and anything that
@@ -131,8 +141,16 @@ Full list in `PLAN.md` (D1-D12). The ones worth knowing:
   time" filter (owner's choice). Real sunrise and sunset move through the year,
   so a summer evening at 7 PM is reported as closed. The page says so next to
   the filter.
-- **Size presets are minimums, not bands**: "Small (5+ acres)" also includes
-  500-acre parks.
+- **Size buckets have fixed edges**: 25 acres is Medium (not Small), 100 is
+  Large, 500 is Very large. A park with no acreage is in no bucket and only
+  appears under "Any size". "Tiny" was added so parks under 5 acres are
+  reachable.
+- **Near me limits**: distances are straight-line, not walking or driving.
+  Choosing a point by clicking the map is a pointer/touch action, so the typed
+  coordinates are the keyboard equivalent. The starting point is not kept
+  across a page reload (deliberately). The browser only offers device location
+  on HTTPS or localhost. If no park has valid coordinates there is no map to
+  click, and typed coordinates still work.
 - **A repeated announcement is not re-read**: changing a filter so that the
   count stays the same produces the same text, which screen readers may not
   announce again.
@@ -156,10 +174,10 @@ Full list in `PLAN.md` (D1-D12). The ones worth knowing:
 
 ## How it was checked
 Run on 2026-10-14; real output was read, not assumed.
-- `npm test`: 14 files, 309 tests passing. Written test-first; each stage's
+- `npm test`: 16 files, 375 tests passing. Written test-first; each stage's
   tests were seen failing for the right reason before the code existed.
 - `npm run typecheck`, `npm run lint`: clean.
-- `npm run e2e`: 55 Playwright tests in Chromium against the production build
+- `npm run e2e`: 69 Playwright tests in Chromium against the production build
   (including the filters, shareable URLs, the extended dataset and its long text):
   keyboard-only path, marker selection with Enter and Space, focus ring present,
   broken-image and blocked-tile fallbacks, 320px reflow, phone list/details
@@ -183,7 +201,8 @@ accessibility. See `REVIEW_NOTES.md` for what was checked by hand.
 4. Send the CSP and other security headers as HTTP headers over HTTPS.
 5. Replace public OSM tiles with a provider suited to production traffic.
 6. Fix the marker overlap (clustering or a larger/zoomed map) and re-selection.
-7. Add text search and "near me" sorting; consider filter presets as bands.
+7. Add text search and an address lookup (with a privacy review of whichever
+   geocoding service is chosen).
 8. CI: tests, e2e, audit, secret scanning; dependency updates; error
    monitoring that does not capture personal data.
 

@@ -43,6 +43,18 @@ describe('ParkDetails', () => {
     expect(screen.queryByText(/not shown on the map/i)).not.toBeInTheDocument();
   });
 
+  it('shows the straight-line distance only when one is given', () => {
+    const { unmount } = render(
+      <ParkDetails park={sparse} headingRef={createRef()} distanceMiles={2.34} />,
+    );
+    expect(screen.getByText('Distance')).toBeInTheDocument();
+    expect(screen.getByText(/2\.3 mi/)).toHaveTextContent(/straight line/i);
+    unmount();
+
+    render(<ParkDetails park={sparse} headingRef={createRef()} />);
+    expect(screen.queryByText('Distance')).not.toBeInTheDocument();
+  });
+
   it('attaches the heading ref so focus can be moved to it', () => {
     const { ref } = show(full);
     expect(ref.current).toBe(screen.getByRole('heading', { level: 2 }));

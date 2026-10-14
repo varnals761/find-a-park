@@ -17,6 +17,8 @@
   --header-text: #ffffff;
   --header-muted: #d6e4f5;
   --placeholder-bg: #eceff1;
+  --error: #9b1c1c;
+  --origin: #6a1b9a;
   --radius: 8px;
   --space: 1rem;
   --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -154,7 +156,7 @@ dd {
 
 /* Filters act on the list, so they step aside with it on phones. */
 .layout.has-selection .list-section,
-.layout.has-selection .filters {
+.layout.has-selection .top-panels {
   display: none;
 }
 
@@ -174,12 +176,12 @@ dd {
   }
 
   .layout.has-selection .list-section,
-  .layout.has-selection .filters,
+  .layout.has-selection .top-panels,
   .layout:not(.has-selection) .details-section {
     display: block;
   }
 
-  .filters {
+  .top-panels {
     grid-area: filters;
   }
 
@@ -231,6 +233,31 @@ dd {
   overflow: hidden;
 }
 
+.park-list .distance {
+  display: block;
+  padding: 0 0.75rem 0.625rem;
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+
+/* The starting point: a filled dot with a white ring, round (not a pin) so it
+   cannot be mistaken for a park. */
+.origin-marker {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--origin);
+  border: 3px solid #ffffff;
+  box-shadow: 0 0 0 2px var(--origin);
+}
+
+/* While picking, the map shows a crosshair. */
+.map-picking,
+.map-picking.leaflet-grab,
+.map-picking .leaflet-grab {
+  cursor: crosshair;
+}
+
 .park-list .address {
   display: block;
   padding: 0 0.75rem 0.625rem;
@@ -250,14 +277,30 @@ dd {
 }
 
 /* ----------------------------------------------------------------- filters */
-.filters {
+/* Filters and Near me sit side by side on wide screens, stacked on phones. */
+.top-panels {
+  display: grid;
+  gap: var(--space);
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+
+@media (min-width: 56rem) {
+  .top-panels {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  }
+}
+
+.filters,
+.near-me {
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
   background: var(--surface);
   padding: 0 var(--space);
 }
 
-.filters > summary {
+.filters > summary,
+.near-me > summary {
   min-height: 44px;
   display: flex;
   align-items: center;
@@ -328,7 +371,9 @@ dd {
 }
 
 .clear-filters,
-.dataset-switch button {
+.dataset-switch button,
+.near-me button,
+.secondary-button {
   min-height: 44px;
   padding: 0.5rem 1rem;
   font: inherit;
@@ -342,6 +387,77 @@ dd {
 
 .clear-filters {
   margin-top: var(--space);
+}
+
+.near-me {
+  background: var(--surface);
+  padding: 0 var(--space) var(--space);
+}
+
+.near-me > summary {
+  margin: 0 calc(-1 * var(--space));
+  padding: 0 var(--space);
+}
+
+.near-me-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.near-me button[aria-pressed='true'] {
+  color: var(--header-text);
+  background: var(--link);
+}
+
+.near-me button:disabled {
+  color: var(--muted);
+  border-color: var(--border-strong);
+  cursor: default;
+}
+
+.near-me fieldset {
+  margin: var(--space) 0 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.near-me legend {
+  padding: 0;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.near-me input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.5rem;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+}
+
+.near-me input[aria-invalid='true'] {
+  border-color: var(--error);
+  border-width: 2px;
+}
+
+.near-me fieldset .secondary-button {
+  margin-top: 0.75rem;
+}
+
+.starting-point {
+  margin: var(--space) 0 0;
+  font-weight: 600;
+}
+
+.error {
+  margin: 0.5rem 0 0;
+  color: var(--error);
+  font-weight: 600;
 }
 
 .clear-filters:disabled {

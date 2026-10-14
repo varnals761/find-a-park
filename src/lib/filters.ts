@@ -10,8 +10,8 @@ export type Filters = {
   time: string;
   /** Minimum rating, or null for any. */
   minRating: number | null;
-  /** Minimum acreage, or null for any. */
-  minAcres: number | null;
+  /** One size bucket, or null for any size. Buckets do not overlap. */
+  size: SizeId | null;
   /** Canonical slugs; a park must have ALL of them. Sorted, unique. */
   amenities: string[];
 };
@@ -20,7 +20,7 @@ export const NO_FILTERS: Filters = {
   hours: 'any',
   time: '12:00',
   minRating: null,
-  minAcres: null,
+  size: null,
   amenities: [],
 };
 
@@ -31,12 +31,18 @@ export const RATING_PRESETS = [
   { value: 4.5, label: '4.5 or higher' },
 ] as const;
 
-export const SIZE_PRESETS = [
-  { value: 5, label: 'Small (5+ acres)' },
-  { value: 25, label: 'Medium (25+ acres)' },
-  { value: 100, label: 'Large (100+ acres)' },
-  { value: 500, label: 'Very large (500+ acres)' },
+// Size is a set of bands, not "X acres or more": a park is in exactly one.
+// min is inclusive and max is exclusive, so 25 acres is Medium, not Small.
+// "Tiny" exists so parks under 5 acres can still be reached by a bucket.
+export const SIZE_BUCKETS = [
+  { id: 'tiny', label: 'Tiny (under 5 acres)', min: 0, max: 5 },
+  { id: 'small', label: 'Small (5\u201325 acres)', min: 5, max: 25 },
+  { id: 'medium', label: 'Medium (25\u2013100 acres)', min: 25, max: 100 },
+  { id: 'large', label: 'Large (100\u2013500 acres)', min: 100, max: 500 },
+  { id: 'xlarge', label: 'Very large (500+ acres)', min: 500, max: Infinity },
 ] as const;
+
+export type SizeId = (typeof SIZE_BUCKETS)[number]['id'];
 
 // ----------------------------------------------------------------- URL query
 
@@ -57,8 +63,8 @@ export function parseQuery(query: string): { filters: Filters; dataset: DatasetN
   const rating = Number(params.get('rating'));
   if (RATING_PRESETS.some((p) => p.value === rating)) filters.minRating = rating;
 
-  const size = Number(params.get('size'));
-  if (SIZE_PRESETS.some((p) => p.value === size)) filters.minAcres = size;
+  const size = SIZE_BUCKETS.find((b) => b.id === params.get('size'));
+  if (size !== undefined) filters.size = size.id;
 
   const amenities = params.getAll('amenity').filter((a) => a.trim() !== '');
   filters.amenities = [...new Set(amenities)].sort();
@@ -76,7 +82,7 @@ export function serializeQuery(filters: Filters, dataset: DatasetName): string {
     if (filters.hours === 'open-at') params.set('time', filters.time);
   }
   if (filters.minRating !== null) params.set('rating', String(filters.minRating));
-  if (filters.minAcres !== null) params.set('size', String(filters.minAcres));
+  if (filters.size !== null) params.set('size', filters.size);
   for (const amenity of [...new Set(filters.amenities)].sort()) params.append('amenity', amenity);
   const text = params.toString();
   return text === '' ? '' : `?${text}`;
@@ -120,8 +126,17 @@ export function applyFilters(
     if (filters.minRating !== null && (park.rating === undefined || park.rating < filters.minRating)) {
       continue;
     }
-    if (filters.minAcres !== null && (park.acreage === undefined || park.acreage < filters.minAcres)) {
-      continue;
+    if (filters.size !== null) {
+      const bucket = SIZE_BUCKETS.find((b) => b.id === filters.size);
+      const acreage = park.acreage;
+      if (
+        bucket === undefined ||
+        acreage === undefined ||
+        acreage < bucket.min ||
+        acreage >= bucket.max
+      ) {
+        continue;
+      }
     }
     if (!filters.amenities.every((a) => park.amenities.includes(a))) continue;
 
@@ -140,7 +155,7 @@ export function activeFilterCount(filters: Filters): number {
   return (
     (filters.hours !== 'any' ? 1 : 0) +
     (filters.minRating !== null ? 1 : 0) +
-    (filters.minAcres !== null ? 1 : 0) +
+    (filters.size !== null ? 1 : 0) +
     filters.amenities.length
   );
 }

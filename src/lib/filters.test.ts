@@ -10,6 +10,7 @@ import {
   NO_FILTERS,
   parseQuery,
   serializeQuery,
+  SIZE_BUCKETS,
   type Filters,
 } from './filters';
 
@@ -44,17 +45,55 @@ describe('applyFilters: rating', () => {
   });
 });
 
-describe('applyFilters: acreage', () => {
-  it('keeps parks at or above the minimum and excludes parks with no acreage', () => {
-    expect(ids(applyFilters(ALL, f({ minAcres: 25 })).matches)).toEqual(['a', 'c']);
-    expect(ids(applyFilters(ALL, f({ minAcres: 5 })).matches)).toEqual(['a', 'c']);
-    expect(ids(applyFilters(ALL, f({ minAcres: 500 })).matches)).toEqual(['c']);
+describe('applyFilters: size buckets', () => {
+  it('each park falls in exactly one bucket, and parks with no acreage in none', () => {
+    // A = 30 acres, B = 4, C = 600, D and E have no acreage.
+    expect(ids(applyFilters(ALL, f({ size: 'tiny' })).matches)).toEqual(['b']);
+    expect(ids(applyFilters(ALL, f({ size: 'small' })).matches)).toEqual([]);
+    expect(ids(applyFilters(ALL, f({ size: 'medium' })).matches)).toEqual(['a']);
+    expect(ids(applyFilters(ALL, f({ size: 'large' })).matches)).toEqual([]);
+    expect(ids(applyFilters(ALL, f({ size: 'xlarge' })).matches)).toEqual(['c']);
   });
 
-  it('a 0-acre park matches only when no minimum is set', () => {
+  it('a Medium park is not in Small, and a Large park is not in Medium', () => {
+    const medium = park({ id: 'm', acreage: 60 });
+    const large = park({ id: 'l', acreage: 200 });
+    expect(applyFilters([medium, large], f({ size: 'small' })).matches).toEqual([]);
+    expect(ids(applyFilters([medium, large], f({ size: 'medium' })).matches)).toEqual(['m']);
+    expect(ids(applyFilters([medium, large], f({ size: 'large' })).matches)).toEqual(['l']);
+  });
+
+  it.each([
+    [0, 'tiny'],
+    [4.99, 'tiny'],
+    [5, 'small'],
+    [24.99, 'small'],
+    [25, 'medium'],
+    [99.9, 'medium'],
+    [100, 'large'],
+    [499.9, 'large'],
+    [500, 'xlarge'],
+    [10000, 'xlarge'],
+  ])('%s acres is in the %s bucket only', (acreage, bucket) => {
+    const p = park({ id: 'p', acreage });
+    for (const id of SIZE_BUCKETS.map((b) => b.id)) {
+      const found = applyFilters([p], f({ size: id })).matches.length === 1;
+      expect(found, `${acreage} acres in ${id}`).toBe(id === bucket);
+    }
+  });
+
+  it('a 0-acre park is a real value: it matches the tiny bucket', () => {
     const zero = park({ id: 'z', acreage: 0 });
     expect(ids(applyFilters([zero], NO_FILTERS).matches)).toEqual(['z']);
-    expect(applyFilters([zero], f({ minAcres: 5 })).matches).toEqual([]);
+    expect(ids(applyFilters([zero], f({ size: 'tiny' })).matches)).toEqual(['z']);
+  });
+
+  it('the buckets are contiguous: every acreage belongs to exactly one', () => {
+    for (let i = 1; i < SIZE_BUCKETS.length; i += 1) {
+      expect(SIZE_BUCKETS[i]!.min).toBe(SIZE_BUCKETS[i - 1]!.max);
+    }
+    expect(SIZE_BUCKETS[0]!.min).toBe(0);
+    expect(SIZE_BUCKETS[SIZE_BUCKETS.length - 1]!.max).toBe(Infinity);
   });
 });
 
@@ -122,7 +161,7 @@ describe('applyFilters: filters stack', () => {
   it('combines hours, rating, acreage and amenities with AND', () => {
     const result = applyFilters(
       ALL,
-      f({ hours: 'open-at', time: '20:00', minRating: 4, minAcres: 25, amenities: ['trails'] }),
+      f({ hours: 'open-at', time: '20:00', minRating: 4, size: 'medium', amenities: ['trails'] }),
     );
     expect(ids(result.matches)).toEqual(['a']);
   });
@@ -139,7 +178,7 @@ describe('activeFilterCount', () => {
     expect(activeFilterCount(NO_FILTERS)).toBe(0);
     expect(activeFilterCount(f({ minRating: 4 }))).toBe(1);
     expect(
-      activeFilterCount(f({ hours: 'all-day', minRating: 4, minAcres: 5, amenities: ['a', 'b'] })),
+      activeFilterCount(f({ hours: 'all-day', minRating: 4, size: 'small', amenities: ['a', 'b'] })),
     ).toBe(5);
   });
 });
@@ -161,12 +200,12 @@ describe('parseQuery / serializeQuery', () => {
       hours: 'open-at',
       time: '14:30',
       minRating: 4.5,
-      minAcres: 100,
+      size: 'large',
       amenities: ['playground', 'restrooms'],
     });
     const query = serializeQuery(filters, 'extended');
     expect(query).toBe(
-      '?data=extended&hours=open-at&time=14%3A30&rating=4.5&size=100&amenity=playground&amenity=restrooms',
+      '?data=extended&hours=open-at&time=14%3A30&rating=4.5&size=large&amenity=playground&amenity=restrooms',
     );
     expect(parseQuery(query)).toEqual({ filters, dataset: 'extended' });
   });
@@ -187,8 +226,10 @@ describe('parseQuery / serializeQuery', () => {
     expect(parseQuery('rating=abc').filters.minRating).toBeNull();
     expect(parseQuery('rating=7').filters.minRating).toBeNull();
     expect(parseQuery('rating=3.7').filters.minRating).toBeNull(); // not a preset
-    expect(parseQuery('size=-5').filters.minAcres).toBeNull();
-    expect(parseQuery('size=12').filters.minAcres).toBeNull(); // not a preset
+    expect(parseQuery('size=-5').filters.size).toBeNull();
+    expect(parseQuery('size=100').filters.size).toBeNull(); // old numeric form
+    expect(parseQuery('size=huge').filters.size).toBeNull();
+    expect(parseQuery('size=medium').filters.size).toBe('medium');
     expect(parseQuery('data=somethingelse').dataset).toBe('sample');
     expect(parseQuery('amenity=').filters.amenities).toEqual([]);
   });
@@ -228,6 +269,14 @@ describe('filters against the real datasets', () => {
       'prospect-park',
       'willow-creek-wetlands',
     ]);
+  });
+
+  it('sample: the five size buckets split the 12 parks with no overlap', () => {
+    const counts = SIZE_BUCKETS.map(
+      (b) => applyFilters(sampleParks, f({ size: b.id })).matches.length,
+    );
+    expect(counts).toEqual([2, 3, 4, 1, 2]); // tiny, small, medium, large, very large
+    expect(counts.reduce((a, b) => a + b, 0)).toBe(sampleParks.length);
   });
 
   it('sample: trails AND parking AND wildlife-viewing', () => {

@@ -4,7 +4,8 @@ import {
   activeFilterCount,
   NO_FILTERS,
   RATING_PRESETS,
-  SIZE_PRESETS,
+  SIZE_BUCKETS,
+  type SizeId,
   type Filters,
   type HoursFilter,
 } from '../lib/filters';
@@ -120,18 +121,18 @@ export function FilterPanel({ filters, amenityOptions, onChange, resultText, not
             <label htmlFor="filter-size">Size</label>
             <select
               id="filter-size"
-              value={filters.minAcres === null ? '' : String(filters.minAcres)}
+              value={filters.size ?? ''}
               onChange={(e) =>
                 onChange({
                   ...filters,
-                  minAcres: e.target.value === '' ? null : Number(e.target.value),
+                  size: e.target.value === '' ? null : (e.target.value as SizeId),
                 })
               }
             >
               <option value="">Any size</option>
-              {SIZE_PRESETS.map((p) => (
-                <option key={p.value} value={p.value}>
-                  {p.label}
+              {SIZE_BUCKETS.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.label}
                 </option>
               ))}
             </select>

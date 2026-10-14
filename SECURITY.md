@@ -39,7 +39,12 @@ Status key: `[x]` implemented and checked (see the verification record below),
 - [x] `.env*` files are gitignored (`git check-ignore` confirmed).
 - [x] No personal data collected, stored, or transmitted by the app. No cookies
       and no localStorage/sessionStorage use (checked in a browser test).
-      Geolocation is not implemented.
+- [x] Location ("Near me") is opt-in: the device location is requested only
+      after a button press. The starting point is held in memory only and is
+      never placed in the URL, storage, a cookie or any request (browser test
+      with a typed point). There is no address lookup, so no typed address
+      leaves the page. Map tiles are requested for the area the map shows, not
+      for the starting point.
 
 ### Third parties
 - [x] No analytics, trackers, ad scripts, or third-party CDNs. Leaflet and its
@@ -127,3 +132,4 @@ Real results, run 2026-10-14 on branch `feature/07-polish`.
 | CSP exercised in browser (`e2e/csp.spec.ts`, production build) | 2026-10-14 | Policy present, no `unsafe-*`, tiles allowed, zero `securitypolicyviolation` events across list, marker and back navigation |
 | Cookies / web storage (`e2e/csp.spec.ts`) | 2026-10-14 | None set |
 | External link `rel` (`ParkMap.test.tsx`) | 2026-10-14 | All attribution links `noopener noreferrer` (after fixing Leaflet's default link) |
+| Near me privacy (`e2e/near-me.spec.ts`) | 2026-10-14 | After setting a starting point: no coordinates in the URL, no web storage, no cookies, no request URL containing them |

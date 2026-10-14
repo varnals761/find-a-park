@@ -47,9 +47,10 @@ describe('FilterPanel', () => {
     const size = screen.getByRole('combobox', { name: 'Size' });
     expect(within(size).getAllByRole('option').map((o) => o.textContent)).toEqual([
       'Any size',
-      'Small (5+ acres)',
-      'Medium (25+ acres)',
-      'Large (100+ acres)',
+      'Tiny (under 5 acres)',
+      'Small (5\u201325 acres)',
+      'Medium (25\u2013100 acres)',
+      'Large (100\u2013500 acres)',
       'Very large (500+ acres)',
     ]);
   });
@@ -57,8 +58,8 @@ describe('FilterPanel', () => {
   it('reports a size change with the numeric minimum', async () => {
     const user = userEvent.setup();
     const { onChange } = setup();
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Size' }), '25');
-    expect(onChange).toHaveBeenCalledExactlyOnceWith({ ...NO_FILTERS, minAcres: 25 });
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Size' }), 'medium');
+    expect(onChange).toHaveBeenCalledExactlyOnceWith({ ...NO_FILTERS, size: 'medium' });
   });
 
   it('shows a time input only for "Open at a time", defaulting to noon', async () => {

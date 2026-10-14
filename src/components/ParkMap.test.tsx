@@ -69,6 +69,63 @@ describe('ParkMap', () => {
     expect(container.querySelector('.leaflet-container')).toBeNull();
   });
 
+  it('shows a starting-point marker only when an origin is given', () => {
+    const { container, rerender } = render(
+      <ParkMap parks={parks} selectedId={null} onSelect={() => {}} />,
+    );
+    expect(container.querySelector('.origin-marker')).toBeNull();
+
+    rerender(
+      <ParkMap
+        parks={parks}
+        selectedId={null}
+        onSelect={() => {}}
+        origin={{ lat: 40.75, lng: -73.99 }}
+      />,
+    );
+    const marker = container.querySelector('.origin-marker');
+    expect(marker).not.toBeNull();
+    // It is not a control: no tab stop, hidden from assistive technology.
+    expect(marker).not.toHaveAttribute('tabindex');
+    expect(marker).toHaveAttribute('aria-hidden', 'true');
+
+    rerender(<ParkMap parks={parks} selectedId={null} onSelect={() => {}} origin={null} />);
+    expect(container.querySelector('.origin-marker')).toBeNull();
+  });
+
+  it('only picks a point from the map while pick mode is on', () => {
+    const onPick = vi.fn();
+    const { container, rerender } = render(
+      <ParkMap parks={parks} selectedId={null} onSelect={() => {}} onPick={onPick} />,
+    );
+    const map = container.querySelector('.leaflet-container') as HTMLElement;
+
+    fireEvent.click(map);
+    expect(onPick).not.toHaveBeenCalled();
+    expect(container.querySelector('.map-picking')).toBeNull();
+
+    rerender(
+      <ParkMap parks={parks} selectedId={null} onSelect={() => {}} onPick={onPick} pickMode />,
+    );
+    expect(container.querySelector('.map-picking')).not.toBeNull();
+    fireEvent.click(map);
+    expect(onPick).toHaveBeenCalledTimes(1);
+    const [lat, lng] = onPick.mock.calls[0] as [number, number];
+    expect(Number.isFinite(lat)).toBe(true);
+    expect(Number.isFinite(lng)).toBe(true);
+  });
+
+  it('clicking a park marker in pick mode selects the park, not a starting point', () => {
+    const onPick = vi.fn();
+    const onSelect = vi.fn();
+    render(
+      <ParkMap parks={parks} selectedId={null} onSelect={onSelect} onPick={onPick} pickMode />,
+    );
+    fireEvent.click(screen.getByAltText('Alpha Park, show details'));
+    expect(onSelect).toHaveBeenCalledExactlyOnceWith('a');
+    expect(onPick).not.toHaveBeenCalled();
+  });
+
   it('gives markers a plain-text name even when the park name has markup', () => {
     render(
       <ParkMap

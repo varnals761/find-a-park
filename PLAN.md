@@ -30,7 +30,7 @@ Not adding: react-router, react-leaflet, CSS framework, state library.
 | D9 | ~~Rating shown with no scale.~~ **Changed by owner:** rating is on a 1-5 scale, shown as "4.7 out of 5"; values outside 1-5 are invalid. The scale is an owner-supplied assumption, not in the data. |
 | D10 | `<img>` with alt from park name + photo index; `onError` swaps to an "Image unavailable" box. All sample image hosts are fake, so this runs for every image. |
 | D11 | List sorted alphabetically by name. |
-| D12 | Search/filter/near-me out of scope until the core is verified. **Update:** filters, URL query state and the extended-dataset button were added later at the owner's request (stage 9). Text search and near-me are not built. |
+| D12 | Search/filter/near-me out of scope until the core is verified. **Update:** filters, URL query state and the extended-dataset button were added later at the owner's request (stage 9). Near me (opt-in device location, click-the-map, typed coordinates; no geocoding, per the owner's "option B") was added in stage 10. Text search is not built. |
 
 ## Data model
 ```ts

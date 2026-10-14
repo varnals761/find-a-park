@@ -43,8 +43,6 @@ Suggested order, following the data:
 7. `e2e/` (what is checked in a real browser, and what is not).
 
 ## The piece of code I reviewed closely
-**[Pick one you genuinely reviewed. Candidates, with what was checked and how
-each could be wrong:]**
 
 - **`ParkMap.tsx` keyboard handling.** Finding: Leaflet marks markers
   `role="button"` and `tabindex="0"` but only turns Enter into a click for
@@ -54,17 +52,15 @@ each could be wrong:]**
   Enter and Space on a focused marker in Chromium.
   *Still unsure:* behavior with screen reader virtual cursors, which may send
   synthesized clicks instead of keydown events.
+- **The focus effects in `App.tsx`.** They depend on effect declaration order.
+  *Checked by:* tests for open, back, first-load, and unknown id; Playwright
+  keyboard path. *Could be wrong:* not tested under every history-navigation
+  pattern.
 - **`normalizePark.ts`.** Checked by 60+ table-driven tests, including bad
   types, out-of-range coordinates, `javascript:` and `data:` image URLs, and the
   real sample file. *Could be wrong:* the 1-5 rating scale is an owner-supplied
   assumption, not in the data; amenity canonicalization (e.g. `Wi-Fi` -> `wifi`)
   only knows one alias.
-- **The focus effects in `App.tsx`.** They depend on effect declaration order.
-  *Checked by:* tests for open, back, first-load, and unknown id; Playwright
-  keyboard path. *Could be wrong:* not tested under every history-navigation
-  pattern.
-
-**[How you checked it, in your words, and any mistake you found and fixed.]**
 
 ## Mistakes caught during the build (real ones only)
 - Leaflet markers inert on Enter (above).
@@ -90,5 +86,6 @@ production tile provider, pin overlap fix, search/filter with announced counts,
 CI and monitoring.
 
 ## Questions to ask them
-**[Your own: team, role, how accessibility is tested in practice, how park data
-is sourced and kept current, how maps/tiles are provisioned.]**
+- What is the biggest challenge or bottleneck the team is facing right now?
+- How often are releases? What is the production release cycle like?
+- What is the ratio of Junior engineers to Senior engineers?

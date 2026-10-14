@@ -1,17 +1,26 @@
 import type { ReactNode, RefObject } from 'react';
 import type { Park } from '../data/types';
 import { amenityLabel } from '../lib/amenityLabel';
+import { formatMiles } from '../lib/distance';
 import { InlineMarkup } from './InlineMarkup';
 import { ParkImage } from './ParkImage';
 
-type Props = { park: Park; headingRef: RefObject<HTMLHeadingElement | null> };
+type Props = {
+  park: Park;
+  headingRef: RefObject<HTMLHeadingElement | null>;
+  /** Straight-line distance from the starting point, when there is one. */
+  distanceMiles?: number | undefined;
+};
 
 // Every field is optional: a row or section is rendered only when its value is
 // present. Nothing is substituted for missing data.
-export function ParkDetails({ park, headingRef }: Props) {
+export function ParkDetails({ park, headingRef, distanceMiles }: Props) {
   const facts: { label: string; value: ReactNode }[] = [];
   if (park.address !== undefined) {
     facts.push({ label: 'Address', value: <InlineMarkup text={park.address} /> });
+  }
+  if (distanceMiles !== undefined) {
+    facts.push({ label: 'Distance', value: `${formatMiles(distanceMiles)}, straight line` });
   }
   if (park.hours !== undefined) facts.push({ label: 'Hours', value: park.hours });
   if (park.acreage !== undefined) facts.push({ label: 'Acreage', value: String(park.acreage) });

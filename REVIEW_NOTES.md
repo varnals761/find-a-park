@@ -91,6 +91,32 @@ None yet. No application code exists.
   announcement; real touch; how the filter panel reads on a real phone; the new CSS visually
   (no screenshots were taken after the filter styling).
 
+## Stage 10: size buckets and Near me (option B)
+- Tests first (size bands, distance maths, NearMePanel, App/Map/List/Details integration;
+  36 failed for the expected reasons). Final: 375 unit tests, 69 Playwright tests (Chromium,
+  production build), typecheck, lint, build clean; `npm audit` 0 vulnerabilities.
+- Size filter changed from "X acres or more" to non-overlapping buckets (owner request, after
+  noticing Small included Medium and Large). Edges are inclusive-low/exclusive-high (25 is
+  Medium). I added "Tiny (under 5 acres)" because two sample parks (3 and 2 acres) would
+  otherwise belong to no bucket; this was not asked for. URL form changed from `size=100` to
+  `size=large`; old numeric links are ignored (treated as no size filter).
+- Near me, option B as agreed: device location only on a button press; "Choose a point on the
+  map"; typed latitude/longitude as the keyboard equivalent; no geocoding. The starting point is
+  in React state only. A browser test records every request URL and checks none contains it.
+- The map is given the unsorted filtered parks (not the nearest-first list) so changing the
+  starting point does not rebuild every marker. The origin is a DOM dot (`divIcon`), not an SVG
+  circle, which also keeps it testable in jsdom.
+- The origin is not included in the map's fit-to-bounds, so a far-away starting point cannot
+  zoom the map out to the whole world (the same problem found in stage 9).
+- My own test mistakes caught: a fixture not sorted like production, and an assertion that
+  marked the wrong coordinate field invalid. No application defects were found by the tests this
+  stage, which is a reason to treat it with some suspicion: the manual checks below matter.
+- Contrast of the two new colours was computed (error text 8.15:1 on the page, 7.46:1 on the
+  panel; origin dot at least 5.85:1 against typical map colours). Not measured in a browser.
+- NOT verified: a real device location prompt on a real phone; the panel visually (no
+  screenshots); real screen readers on the new controls and announcements; Firefox/Safari; that
+  tapping the map to pick a point works well on touch (Playwright used a mouse click).
+
 ## Owner-requested changes after stage 9 (skip link, markup, title clamp)
 - The skip link now goes to the park list (or the open park's details) instead of the
   filters; the separate "Skip to park list" link was removed as redundant. Found by the owner

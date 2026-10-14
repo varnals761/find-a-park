@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Park } from '../data/types';
 import { App } from './App';
 
@@ -11,17 +11,31 @@ vi.mock('./ParkMap', () => ({
     parks,
     selectedId,
     onSelect,
+    origin,
+    pickMode,
+    onPick,
   }: {
     parks: Park[];
     selectedId: string | null;
     onSelect: (id: string) => void;
+    origin?: { lat: number; lng: number } | null;
+    pickMode?: boolean;
+    onPick?: (lat: number, lng: number) => void;
   }) => (
-    <div data-testid="map-stub" data-selected={selectedId ?? ''}>
+    <div
+      data-testid="map-stub"
+      data-selected={selectedId ?? ''}
+      data-pick={String(pickMode ?? false)}
+      data-origin={origin ? `${origin.lat},${origin.lng}` : ''}
+    >
       {parks.map((p) => (
         <button key={p.id} type="button" onClick={() => onSelect(p.id)}>
           Marker {p.name}
         </button>
       ))}
+      <button type="button" onClick={() => onPick?.(40.71, -74.0)}>
+        Map click
+      </button>
     </div>
   ),
 }));
@@ -179,7 +193,7 @@ describe('App filters', () => {
   it('uses "1 park found" in the singular', async () => {
     const user = userEvent.setup();
     render(<App parks={filterParks} />);
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Size' }), '500');
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Size' }), 'xlarge');
     await waitFor(() => expect(status()).toHaveTextContent('1 park found'), { timeout: 2000 });
   });
 
@@ -304,6 +318,154 @@ describe('App dataset button', () => {
     window.history.replaceState(null, '', '/#/?data=extended');
     render(<App parks={filterParks} />);
     expect(listNames()).toHaveLength(4);
+  });
+});
+
+// Alphabetical, like the real dataset (src/data/parks.ts sorts before the app
+// sees it). Distance order from 40.71, -74.0 is Zeta, Alpha, Mid, Nowhere.
+const geoParks: Park[] = [
+  { id: 'a', name: 'Alpha Green', rating: 5, coords: { lat: 40.8, lng: -73.95 }, amenities: [], images: [] },
+  { id: 'm', name: 'Mid Field', rating: 4.5, coords: { lat: 40.6, lng: -74.1 }, amenities: [], images: [] },
+  { id: 'n', name: 'Nowhere Lot', amenities: [], images: [] },
+  { id: 'z', name: 'Zeta Park', rating: 3, coords: { lat: 40.7, lng: -74.0 }, amenities: [], images: [] },
+];
+
+function setGeolocation(value: unknown) {
+  Object.defineProperty(navigator, 'geolocation', { value, configurable: true });
+}
+
+function geolocationAnswering(latitude: number, longitude: number) {
+  return {
+    getCurrentPosition: vi.fn((ok: (p: unknown) => void) => ok({ coords: { latitude, longitude } })),
+  };
+}
+
+async function typeStartingPoint(user: ReturnType<typeof userEvent.setup>, lat: string, lng: string) {
+  await user.type(screen.getByLabelText('Latitude'), lat);
+  await user.type(screen.getByLabelText('Longitude'), lng);
+  await user.click(screen.getByRole('button', { name: 'Set starting point' }));
+}
+
+describe('App near me', () => {
+  afterEach(() => setGeolocation(undefined));
+
+  it('does not ask for the location on load, and starts alphabetical', () => {
+    const geolocation = geolocationAnswering(40.71, -74.0);
+    setGeolocation(geolocation);
+    render(<App parks={geoParks} />);
+    expect(geolocation.getCurrentPosition).not.toHaveBeenCalled();
+    expect(listNames()).toEqual(['Alpha Green', 'Mid Field', 'Nowhere Lot', 'Zeta Park']);
+    expect(screen.queryByText(/mi away/)).not.toBeInTheDocument();
+  });
+
+  it('typed coordinates sort by distance, show distances, announce it, and stay out of the URL', async () => {
+    const user = userEvent.setup();
+    render(<App parks={geoParks} />);
+    await typeStartingPoint(user, '40.71', '-74.0');
+
+    // Zeta is closest, then Alpha, then Mid; the park with no coordinates is last.
+    expect(listNames()).toEqual(['Zeta Park', 'Alpha Green', 'Mid Field', 'Nowhere Lot']);
+    expect(screen.getAllByText(/mi away/)).toHaveLength(3);
+    expect(screen.getByText(/0\.7 mi away/)).toBeInTheDocument();
+    await waitFor(() =>
+      expect(status()).toHaveTextContent('Parks sorted by distance from your starting point'),
+    );
+    expect(window.location.hash).toBe('');
+    expect(window.location.search).toBe('');
+    expect(screen.getByTestId('map-stub')).toHaveAttribute('data-origin', '40.71,-74');
+  });
+
+  it('device location sorts the list and is announced as your location', async () => {
+    const user = userEvent.setup();
+    setGeolocation(geolocationAnswering(40.71, -74.0));
+    render(<App parks={geoParks} />);
+
+    await user.click(screen.getByRole('button', { name: 'Use my location' }));
+
+    expect(listNames()).toEqual(['Zeta Park', 'Alpha Green', 'Mid Field', 'Nowhere Lot']);
+    await waitFor(() =>
+      expect(status()).toHaveTextContent('Parks sorted by distance from your location'),
+    );
+    expect(screen.getByText(/your device location/i)).toBeInTheDocument();
+  });
+
+  it('a denied permission leaves the list alphabetical and explains the alternatives', async () => {
+    const user = userEvent.setup();
+    setGeolocation({
+      getCurrentPosition: (_ok: unknown, fail: (e: { code: number; message: string }) => void) =>
+        fail({ code: 1, message: 'denied' }),
+    });
+    render(<App parks={geoParks} />);
+
+    await user.click(screen.getByRole('button', { name: 'Use my location' }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent(/permission was denied/i);
+    expect(listNames()).toEqual(['Alpha Green', 'Mid Field', 'Nowhere Lot', 'Zeta Park']);
+  });
+
+  it('clearing the starting point restores alphabetical order and announces it', async () => {
+    const user = userEvent.setup();
+    render(<App parks={geoParks} />);
+    await typeStartingPoint(user, '40.71', '-74.0');
+    await user.click(screen.getByRole('button', { name: 'Clear starting point' }));
+
+    expect(listNames()).toEqual(['Alpha Green', 'Mid Field', 'Nowhere Lot', 'Zeta Park']);
+    expect(screen.queryByText(/mi away/)).not.toBeInTheDocument();
+    await waitFor(() => expect(status()).toHaveTextContent('Parks sorted alphabetically'));
+    expect(screen.getByTestId('map-stub')).toHaveAttribute('data-origin', '');
+  });
+
+  it('picking a point on the map sets the starting point and leaves pick mode', async () => {
+    const user = userEvent.setup();
+    render(<App parks={geoParks} />);
+
+    await user.click(screen.getByRole('button', { name: 'Choose a point on the map' }));
+    expect(screen.getByTestId('map-stub')).toHaveAttribute('data-pick', 'true');
+
+    await user.click(screen.getByRole('button', { name: 'Map click' }));
+
+    expect(listNames()[0]).toBe('Zeta Park');
+    expect(screen.getByText(/chosen on the map/i)).toBeInTheDocument();
+    expect(screen.getByTestId('map-stub')).toHaveAttribute('data-pick', 'false');
+  });
+
+  it('works together with filters: only matching parks, nearest first', async () => {
+    const user = userEvent.setup();
+    render(<App parks={geoParks} />);
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Rating' }), '4');
+    await typeStartingPoint(user, '40.71', '-74.0');
+
+    expect(listNames()).toEqual(['Alpha Green', 'Mid Field']);
+    // The map gets the filtered parks, not the whole dataset.
+    expect(screen.queryByRole('button', { name: 'Marker Zeta Park' })).not.toBeInTheDocument();
+  });
+
+  it('shows the distance in the details, and keeps the origin when opening a park', async () => {
+    const user = userEvent.setup();
+    render(<App parks={geoParks} />);
+    await typeStartingPoint(user, '40.71', '-74.0');
+
+    await user.click(screen.getByRole('link', { name: 'Zeta Park' }));
+
+    const details = await screen.findByRole('region', { name: 'Park details' });
+    expect(within(details).getByText('Distance')).toBeInTheDocument();
+    expect(within(details).getByText(/0\.7 mi/)).toBeInTheDocument();
+    expect(window.location.hash).toBe('#/parks/z');
+  });
+
+  it('keeps the starting point when the dataset changes', async () => {
+    const user = userEvent.setup();
+    render(
+      <App
+        parks={geoParks}
+        extendedParks={[{ id: 'e', name: 'Extended One', coords: { lat: 40.7, lng: -74 }, amenities: [], images: [] }]}
+      />,
+    );
+    await typeStartingPoint(user, '40.71', '-74.0');
+    await user.click(screen.getByRole('button', { name: 'Extended Parks' }));
+
+    await waitFor(() => expect(listNames()).toEqual(['Extended One']));
+    expect(screen.getByText(/mi away/)).toBeInTheDocument();
   });
 });
 
