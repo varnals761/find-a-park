@@ -29,7 +29,16 @@ Only real findings go here. Update as work lands.
 None yet. No application code exists.
 
 ## Checked
-Nothing run yet.
+- Stage 0 (scaffold): `npm test` (1 smoke test, failed first for missing `./App`, then passed),
+  `npm run typecheck`, `npm run lint`, `npm run build`, `npm audit` (0 vulnerabilities),
+  dev server returns HTTP 200. Real output was reviewed in the session, not just exit codes.
+
+## Decisions added during scaffold
+- ESLint pinned to 9.x: `eslint-plugin-jsx-a11y@6.10.2` peers only up to ESLint 9, and
+  ESLint 10 would have needed `--legacy-peer-deps`. ESLint 9.39.5 prints a "no longer
+  supported" deprecation warning; revisit when jsx-a11y supports 10.
+- `noUncheckedIndexedAccess` enabled in tsconfig (stricter than `strict`).
+- Playwright deferred to stage 4 as planned; `npm run e2e` does not work yet.
 
 ## Unverified / open
 - Everything about runtime behavior, accessibility, and the build.

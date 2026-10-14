@@ -66,15 +66,15 @@ proposing anything. Do not assume facts that are not in those files.
 - At the end of each stage: summarize what changed, list the 1-3 pieces of
   code most worth my close review and how each could be wrong.
 
-## Commands (fill in once scaffolded; do not guess)
+## Commands (verified in stage 0, except e2e)
 ```
-install:    <npm install>
-dev:        <npm run dev>
-typecheck:  <npm run typecheck>
-lint:       <npm run lint>
-test:       <npm test>
-e2e:        <npm run e2e>
-build:      <npm run build>
+install:    npm install
+dev:        npm run dev
+typecheck:  npm run typecheck
+lint:       npm run lint
+test:       npm test
+e2e:        npm run e2e   (Playwright not installed yet; added in stage 4)
+build:      npm run build
 ```
 
 ## Records to keep current
