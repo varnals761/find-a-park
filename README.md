@@ -1,3 +1,5 @@
+<img width="1902" height="905" alt="image" src="https://github.com/user-attachments/assets/591805e0-7aee-4d12-a517-a40c9d51d94a" />
+
 # Find a Park
 
 A small, accessible web app that helps residents find local parks: a map, a
