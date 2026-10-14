@@ -119,6 +119,14 @@ describe('normalizePark: untrusted shapes', () => {
     expect(park?.amenities).toEqual(['trails', 'parking']);
   });
 
+  it('canonicalizes amenity slugs: case, spaces, underscores, Wi-Fi alias, duplicates', () => {
+    const park = normalizePark({
+      ...full,
+      amenities: ['Dog Run', 'dog_run', 'DOG-RUN', 'Wi-Fi', 'wifi', 'Picnic  Areas', '---', ' - '],
+    });
+    expect(park?.amenities).toEqual(['dog-run', 'wifi', 'picnic-areas']);
+  });
+
   it('non-object location leaves address and coords absent', () => {
     for (const location of [null, 'Brooklyn', 5, []]) {
       const park = normalizePark({ ...full, location });
@@ -178,6 +186,14 @@ describe('normalizePark: images', () => {
     expect(park?.images).toEqual(['https://a.example/1.jpg', 'http://a.example/2.jpg']);
   });
 
+  it('removes duplicate image URLs, keeping the first occurrence order', () => {
+    const park = normalizePark({
+      ...full,
+      images: ['https://a.example/1.jpg', 'https://b.example/2.jpg', ' https://a.example/1.jpg '],
+    });
+    expect(park?.images).toEqual(['https://a.example/1.jpg', 'https://b.example/2.jpg']);
+  });
+
   it('non-array images become []', () => {
     expect(normalizePark({ ...full, images: 'https://a.example/1.jpg' })?.images).toEqual([]);
     expect(normalizePark({ ...full, images: null })?.images).toEqual([]);
@@ -185,17 +201,23 @@ describe('normalizePark: images', () => {
 });
 
 describe('normalizePark: numbers', () => {
-  it('keeps zero acreage and zero rating as real values', () => {
-    const park = normalizePark({ ...full, acreage: 0, rating: 0 });
-    expect(park?.acreage).toBe(0);
-    expect(park?.rating).toBe(0);
+  it('keeps zero acreage as a real value', () => {
+    expect(normalizePark({ ...full, acreage: 0 })?.acreage).toBe(0);
+  });
+
+  it('keeps ratings on the 1-5 scale, including the bounds and fractions', () => {
+    for (const rating of [1, 2.5, 4.75, 5]) {
+      expect(normalizePark({ ...full, rating })?.rating).toBe(rating);
+    }
   });
 
   it.each([NaN, Infinity, -1, '526', null, {}])('rejects invalid acreage %j', (acreage) => {
     expect(normalizePark({ ...full, acreage })?.acreage).toBeUndefined();
   });
 
-  it.each([NaN, Infinity, -0.5, '4.7', null, {}])('rejects invalid rating %j', (rating) => {
+  it.each([NaN, Infinity, -0.5, 0, 0.99, 5.01, 6, 47, '4.7', null, {}])(
+    'rejects invalid or out-of-scale rating %j',
+    (rating) => {
     expect(normalizePark({ ...full, rating })?.rating).toBeUndefined();
   });
 });

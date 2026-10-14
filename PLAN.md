@@ -27,7 +27,7 @@ Not adding: react-router, react-leaflet, CSS framework, state library.
 | D6 | Desktop: list/details left, map right. Phone: single column, list and details swap by hash, map below. DOM order: list, details, map. |
 | D7 | Amenity label: generic slug transform (`dog-run` -> "Dog run") plus one override `wifi` -> "Wi-Fi". |
 | D8 | Hours shown verbatim. No parsing, no "open now". Enhancement deferred by owner. |
-| D9 | Rating shown as "Rating: 4.7", no "/5" (scale not in the data). |
+| D9 | ~~Rating shown with no scale.~~ **Changed by owner:** rating is on a 1-5 scale, shown as "4.7 out of 5"; values outside 1-5 are invalid. The scale is an owner-supplied assumption, not in the data. |
 | D10 | `<img>` with alt from park name + photo index; `onError` swaps to an "Image unavailable" box. All sample image hosts are fake, so this runs for every image. |
 | D11 | List sorted alphabetically by name. |
 | D12 | Search/filter/near-me out of scope until the core is verified. |

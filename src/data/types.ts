@@ -7,13 +7,13 @@ export type Park = {
   address?: string;
   /** Present only when lat and lng are both finite numbers in range. */
   coords?: { lat: number; lng: number };
-  /** Raw slugs from the data, e.g. "dog-run". Labels are a UI concern. */
+  /** Canonical lowercase slugs, e.g. "dog-run", unique per park. Labels are a UI concern. */
   amenities: string[];
   /** Free text, shown as-is. Not parsed. */
   hours?: string;
-  /** Only http(s) URLs. May be empty. */
+  /** Unique http(s) URLs. May be empty. */
   images: string[];
   acreage?: number;
-  /** Scale is not stated in the data, so none is assumed. */
+  /** 1-5. The scale is supplied by the owner; the data itself does not state it. */
   rating?: number;
 };

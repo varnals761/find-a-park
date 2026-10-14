@@ -76,6 +76,24 @@ None yet. No application code exists.
   overflow. Tiles were blocked in the screenshots, so the map showed grey, not real tiles.
   Security scans and results are in `SECURITY.md`.
 
+- Stage 8 (extended data, `feature/08-extra`): `assets/extended-parks.sample.json` added
+  (36 entries: 27 valid, 9 that must be skipped; synthetic, fictional names at approximate
+  NJ locations, each with a `_case` field). Tests written first; 13 failed for the
+  expected reasons, then 161 unit tests pass; typecheck, lint, build, 27 e2e, `npm audit`
+  clean. Not yet visible in the app: the dataset button and filters are the next stage.
+
+## Real finding: extended data exposed two latent bugs (stage 8)
+- Duplicate image URLs would have produced duplicate React keys in `ParkDetails`
+  (`key={src}`); the normalizer now de-duplicates images.
+- Amenity spellings (`Dog Run`, `dog_run`, `Wi-Fi` vs `wifi`) were kept raw, so any
+  amenity filter would have treated them as different amenities. The normalizer now
+  canonicalizes to lowercase slugs and de-duplicates (one alias: `wi-fi` -> `wifi`).
+- Behaviour change by owner decision: ratings outside 1-5 are now dropped (including 0,
+  which an earlier test treated as real). Displayed as "N out of 5".
+- My own mistakes caught by the tests while doing this: a regex backslash lost on its way
+  into the file (`trails` became `trail`), and a "140 character" test name that was 109.
+- Known limitation, now a test: swapped lat/lng that are both in range cannot be detected.
+
 ## Real finding: Leaflet attribution link had no rel
 - Rule in CLAUDE.md: external links use `rel="noopener noreferrer"`. Inspecting links in the
   browser showed Leaflet's own "Leaflet" credit lacked `rel` (no `target`, so no opener

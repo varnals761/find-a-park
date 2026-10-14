@@ -1,0 +1,628 @@
+[
+  {
+    "description": "Synthetic test park.",
+    "id": "liberty-view-green",
+    "name": "Liberty View Green",
+    "location": {
+      "lat": 40.7178,
+      "lng": -74.0431,
+      "address": "100 Example Ave, Jersey City, NJ"
+    },
+    "amenities": [
+      "Playground",
+      "Dog Run",
+      "dog_run",
+      "dog-run",
+      "WIFI",
+      "Wi-Fi",
+      "  restrooms  ",
+      7,
+      null,
+      ""
+    ],
+    "hours": "6am-10pm",
+    "acreage": 12.5,
+    "rating": 4.3,
+    "images": [
+      "https://images.example.com/lv-1.jpg",
+      "https://images.example.com/lv-1.jpg",
+      "/relative/lv.jpg",
+      "data:image/png;base64,AAAA",
+      "  https://padded.example.com/lv-2.jpg  ",
+      "http://insecure.example.com/lv-3.jpg"
+    ],
+    "_case": "hours without minutes and spaces; float acreage; mixed-case, underscore and duplicate amenities; duplicate/relative/data/padded/http image URLs"
+  },
+  {
+    "description": "Synthetic test park.",
+    "id": "hoboken-pier-test-park",
+    "name": "Parc des Étoiles (Test)",
+    "location": {
+      "lat": 40.744,
+      "lng": -74.0324,
+      "address": "200 Example St, Hoboken, NJ"
+    },
+    "amenities": [
+      "waterfront",
+      "restrooms",
+      "cafe"
+    ],
+    "hours": "6 AM to 10 PM",
+    "acreage": 3,
+    "rating": 5,
+    "images": [
+      "https://images.example.com/hb-1.jpg"
+    ],
+    "_case": "unicode name; hours using \"to\"; rating at upper bound 5"
+  },
+  {
+    "description": "Synthetic test park.",
+    "id": "newark-meadow-test-green",
+    "name": "Newark Meadow Test Green",
+    "location": {
+      "lat": 40.7357,
+      "lng": -74.1724,
+      "address": "300 Example Rd, Newark, NJ"
+    },
+    "amenities": [
+      "trails",
+      "sports-fields",
+      "parking"
+    ],
+    "hours": "8:00-20:00",
+    "acreage": 45,
+    "rating": 1,
+    "images": [
+      "https://images.example.com/nm-1.jpg"
+    ],
+    "_case": "24-hour clock hours; rating at lower bound 1"
+  },
+  {
+    "description": "Synthetic test park.",
+    "id": "princeton-commons-test-park",
+    "name": "Princeton Commons Test Park",
+    "location": {
+      "lat": 40.3573,
+      "lng": -74.6672,
+      "address": "400 Example Ln, Princeton, NJ"
+    },
+    "amenities": [
+      "gardens",
+      "accessible-paths",
+      "picnic-areas"
+    ],
+    "hours": "Noon - 8 PM",
+    "acreage": 120,
+    "rating": 4.75,
+    "images": [],
+    "_case": "hours using the word Noon; fractional rating; no images"
+  },
+  {
+    "description": "Synthetic test park.",
+    "id": "cape-may-dunes-test-reserve",
+    "name": "Cape May Dunes Test Reserve",
+    "location": {
+      "lat": 38.9351,
+      "lng": -74.906,
+      "address": "500 Example Way, Cape May, NJ"
+    },
+    "amenities": [
+      "Beach Access",
+      "boardwalk",
+      "parking",
+      "wildlife-viewing"
+    ],
+    "hours": "Sunrise to sunset",
+    "acreage": 310,
+    "rating": 4.9,
+    "images": [
+      "https://images.example.com/cm-1.jpg"
+    ],
+    "_case": "sunrise/sunset wording (like \"Dawn to dusk\"); amenity containing a space"
+  },
+  {
+    "description": "Synthetic test park.",
+    "id": "atlantic-boardwalk-test-plaza",
+    "name": "Atlantic Boardwalk Test Plaza",
+    "location": {
+      "lat": 39.3643,
+      "lng": -74.4229,
+      "address": "600 Example Blvd, Atlantic City, NJ"
+    },
+    "amenities": [
+      "boardwalk",
+      "food-vendors",
+      "wifi"
+    ],
+    "hours": "24/7",
+    "acreage": 2,
+    "rating": 3.6,
+    "images": [
+      "https://images.example.com/ab-1.jpg"
+    ],
+    "_case": "hours written 24/7"
+  },
+  {
+    "description": "Synthetic test park.",
+    "id": "trenton-riverfront-test-park",
+    "name": "Trenton Riverfront Test Park",
+    "location": {
+      "lat": 40.2171,
+      "lng": -74.7429,
+      "address": "700 Example Pkwy, Trenton, NJ"
+    },
+    "amenities": [
+      "waterfront",
+      "trails",
+      "bike-path"
+    ],
+    "hours": "Open 24 hours",
+    "acreage": 58,
+    "rating": 4.1,
+    "images": [
+      "https://images.example.com/tr-1.jpg"
+    ],
+    "_case": "hours written \"Open 24 hours\""
+  },
+  {
+    "description": "Synthetic test park.",
+    "id": "paterson-falls-test-overlook",
+    "name": "Paterson Falls Test Overlook",
+    "location": {
+      "lat": 40.9168,
+      "lng": -74.1718,
+      "address": "800 Example Dr, Paterson, NJ"
+    },
+    "amenities": [
+      "trails",
+      "wildlife-viewing"
+    ],
+    "hours": "Mon-Fri 9 AM-5 PM",
+    "acreage": 15,
+    "rating": 4.4,
+    "images": [
+      "https://images.example.com/pf-1.jpg"
+    ],
+    "_case": "day-specific hours that a simple time filter cannot interpret"
+  },
+  {
+    "description": "Synthetic test park.",
+    "id": "montclair-ridge-test-woods",
+    "name": "Montclair Ridge Test Woods",
+    "location": {
+      "lat": 40.8259,
+      "lng": -74.209,
+      "address": "900 Example Ct, Montclair, NJ"
+    },
+    "amenities": [
+      "trails",
+      "restrooms"
+    ],
+    "hours": "Closed for renovation",
+    "acreage": 88,
+    "rating": 4,
+    "images": [
+      "https://images.example.com/mr-1.jpg"
+    ],
+    "_case": "hours that say the park is closed"
+  },
+  {
+    "description": "Synthetic test park.",
+    "id": "asbury-shore-test-park",
+    "name": "Asbury Shore Test Park",
+    "location": {
+      "lat": 40.2204,
+      "lng": -74.0121,
+      "address": "1000 Example Ave, Asbury Park, NJ"
+    },
+    "amenities": [
+      "waterfront",
+      "restrooms",
+      "lighting"
+    ],
+    "hours": "Seasonal: May-Sep",
+    "acreage": 9,
+    "rating": 3.8,
+    "images": [
+      "https://images.example.com/as-1.jpg"
+    ],
+    "_case": "seasonal hours text"
+  },
+  {
+    "description": "Synthetic test park.",
+    "id": "morristown-green-test-park",
+    "name": "O’Neill Memorial Test Green",
+    "location": {
+      "lat": 40.7968,
+      "lng": -74.4815,
+      "address": "1100 Example St, Morristown, NJ"
+    },
+    "amenities": [
+      "event-lawn",
+      "restrooms"
+    ],
+    "hours": "9:00 AM – 5:00 PM",
+    "acreage": 6,
+    "rating": 4.2,
+    "images": [
+      "https://images.example.com/mo-1.jpg"
+    ],
+    "_case": "curly apostrophe in the name; en dash in the hours"
+  },
+  {
+    "description": "Synthetic test park.",
+    "id": "new-brunswick-test-campus-lawn",
+    "name": "The \"Quiet\" Test Lawn",
+    "location": {
+      "lat": 40.4862,
+      "lng": -74.4518,
+      "address": "1200 Example Rd, New Brunswick, NJ"
+    },
+    "amenities": [
+      "gardens",
+      "benches"
+    ],
+    "hours": "7:30 AM - 12:00 AM",
+    "acreage": 4,
+    "rating": 3.9,
+    "images": [
+      "https://images.example.com/nb-1.jpg"
+    ],
+    "_case": "double quotes in the name; closing time at midnight"
+  },
+  {
+    "description": "  Synthetic test park with padded text.  ",
+    "id": "camden-waterfront-test-park",
+    "name": "   Padded Name Test Park   ",
+    "location": {
+      "lat": 39.9259,
+      "lng": -75.1196,
+      "address": "  1300 Example Way, Camden, NJ  "
+    },
+    "amenities": [
+      "waterfront",
+      "playground"
+    ],
+    "hours": "  6:00 AM - 9:00 PM  ",
+    "acreage": 20,
+    "rating": 4,
+    "images": [
+      "https://images.example.com/cd-1.jpg"
+    ],
+    "_case": "leading and trailing whitespace in every text field"
+  },
+  {
+    "description": "",
+    "id": "fort-lee-test-palisade",
+    "name": "Fort Lee Palisade Test Park",
+    "location": {
+      "lat": 40.8509,
+      "lng": -73.9701,
+      "address": ""
+    },
+    "amenities": [
+      "trails"
+    ],
+    "hours": "",
+    "acreage": 14,
+    "rating": 3.7,
+    "images": [
+      "https://images.example.com/fl-1.jpg"
+    ],
+    "_case": "empty-string description, address and hours"
+  },
+  {
+    "id": "hackensack-test-green",
+    "name": "Hackensack Test Green",
+    "description": null,
+    "location": {
+      "lat": 40.8859,
+      "lng": -74.0435
+    },
+    "amenities": null,
+    "hours": null,
+    "acreage": null,
+    "rating": null,
+    "images": null,
+    "_case": "every optional field null"
+  },
+  {
+    "description": "<script>alert('x')</script>Welcome to the synthetic park.",
+    "id": "elizabeth-test-html-park",
+    "name": "<b>Bold</b> Test Park",
+    "location": {
+      "lat": 40.664,
+      "lng": -74.2107,
+      "address": "1400 <i>Example</i> St, Elizabeth, NJ"
+    },
+    "amenities": [
+      "restrooms"
+    ],
+    "hours": "8:00 AM - 8:00 PM",
+    "acreage": 8,
+    "rating": 3.2,
+    "images": [
+      "https://images.example.com/el-1.jpg"
+    ],
+    "_case": "HTML-looking text in name, description and address; must render as text"
+  },
+  {
+    "description": "Sentence 1 of a deliberately long synthetic description used to check wrapping. Sentence 2 of a deliberately long synthetic description used to check wrapping. Sentence 3 of a deliberately long synthetic description used to check wrapping. Sentence 4 of a deliberately long synthetic description used to check wrapping. Sentence 5 of a deliberately long synthetic description used to check wrapping. Sentence 6 of a deliberately long synthetic description used to check wrapping. Sentence 7 of a deliberately long synthetic description used to check wrapping. Sentence 8 of a deliberately long synthetic description used to check wrapping. Sentence 9 of a deliberately long synthetic description used to check wrapping. Sentence 10 of a deliberately long synthetic description used to check wrapping. Sentence 11 of a deliberately long synthetic description used to check wrapping. Sentence 12 of a deliberately long synthetic description used to check wrapping. Sentence 13 of a deliberately long synthetic description used to check wrapping. Sentence 14 of a deliberately long synthetic description used to check wrapping. Sentence 15 of a deliberately long synthetic description used to check wrapping. Sentence 16 of a deliberately long synthetic description used to check wrapping. Sentence 17 of a deliberately long synthetic description used to check wrapping. Sentence 18 of a deliberately long synthetic description used to check wrapping. Sentence 19 of a deliberately long synthetic description used to check wrapping. Sentence 20 of a deliberately long synthetic description used to check wrapping. Sentence 21 of a deliberately long synthetic description used to check wrapping. Sentence 22 of a deliberately long synthetic description used to check wrapping. Sentence 23 of a deliberately long synthetic description used to check wrapping. Sentence 24 of a deliberately long synthetic description used to check wrapping.",
+    "id": "lakewood-test-long-text-park",
+    "name": "Extraordinarily Long Named Community Recreation and Nature Appreciation Park of the Greater Test Municipality and Extraordinarily Long Named Community Recreation and Nature Appreciation Park of the Greater Test Municipality and Extraordinarily Long Named Community Recreation and Nature Appreciation Park",
+    "location": {
+      "lat": 40.0979,
+      "lng": -74.2176,
+      "address": "Unit 4B, Building C, Example Municipal Services Complex, 1000 Example Boulevard North, Test Township, Somewhere County, New Jersey 07000, United States"
+    },
+    "amenities": [
+      "trails",
+      "parking",
+      "restrooms",
+      "playground",
+      "picnic-areas",
+      "dog-run",
+      "lake",
+      "gardens",
+      "cafe",
+      "gift-shop"
+    ],
+    "hours": "6:00 AM - 8:00 PM",
+    "acreage": 260,
+    "rating": 4.6,
+    "images": [
+      "https://images.example.com/lw-1.jpg",
+      "https://images.example.com/lw-2.jpg",
+      "https://images.example.com/lw-3.jpg"
+    ],
+    "_case": "very long name, description, address; many amenities and images"
+  },
+  {
+    "description": "Synthetic test park.",
+    "id": "coords-as-strings-test-park",
+    "name": "Coordinates As Strings Test Park",
+    "location": {
+      "lat": "40.7",
+      "lng": "-74.0",
+      "address": "1500 Example Ave, Jersey City, NJ"
+    },
+    "amenities": [
+      "trails"
+    ],
+    "hours": "9:00 AM - 5:00 PM",
+    "acreage": 5,
+    "rating": 4,
+    "images": [
+      "https://images.example.com/cs-1.jpg"
+    ],
+    "_case": "latitude and longitude supplied as strings: kept in the list, not on the map"
+  },
+  {
+    "description": "Synthetic test park.",
+    "id": "coords-out-of-range-test-park",
+    "name": "Coordinates Out Of Range Test Park",
+    "location": {
+      "lat": 140,
+      "lng": -74,
+      "address": "1600 Example Ave, Jersey City, NJ"
+    },
+    "amenities": [
+      "trails"
+    ],
+    "hours": "9:00 AM - 5:00 PM",
+    "acreage": 5,
+    "rating": 4,
+    "images": [
+      "https://images.example.com/co-1.jpg"
+    ],
+    "_case": "latitude outside -90..90: kept in the list, not on the map"
+  },
+  {
+    "description": "Synthetic test park.",
+    "id": "swapped-coords-test-park",
+    "name": "Swapped Coordinates Test Park",
+    "location": {
+      "lat": -74,
+      "lng": 40.7,
+      "address": "1700 Example Ave, Jersey City, NJ"
+    },
+    "amenities": [
+      "trails"
+    ],
+    "hours": "9:00 AM - 5:00 PM",
+    "acreage": 5,
+    "rating": 4,
+    "images": [
+      "https://images.example.com/sw-1.jpg"
+    ],
+    "_case": "latitude and longitude swapped but both in range: cannot be detected by range checks (documented limitation)"
+  },
+  {
+    "description": "Synthetic test park.",
+    "id": "no-location-test-park",
+    "name": "No Location Test Park",
+    "amenities": [
+      "trails"
+    ],
+    "hours": "9:00 AM - 5:00 PM",
+    "acreage": 5,
+    "rating": 4,
+    "images": [
+      "https://images.example.com/nl-1.jpg"
+    ],
+    "_case": "location key missing entirely"
+  },
+  {
+    "description": "Synthetic test park.",
+    "id": "null-location-test-park",
+    "name": "Null Location Test Park",
+    "location": null,
+    "amenities": [
+      "trails"
+    ],
+    "hours": "9:00 AM - 5:00 PM",
+    "acreage": 5,
+    "rating": 4,
+    "images": [
+      "https://images.example.com/nu-1.jpg"
+    ],
+    "_case": "location is null"
+  },
+  {
+    "description": "Synthetic test park.",
+    "id": "string-numbers-test-park",
+    "name": "String Numbers Test Park",
+    "location": {
+      "lat": 40.75,
+      "lng": -74.05,
+      "address": "1800 Example Ave, Jersey City, NJ"
+    },
+    "amenities": [
+      "trails"
+    ],
+    "hours": "9:00 AM - 5:00 PM",
+    "acreage": "12",
+    "rating": "4.5",
+    "images": [
+      "https://images.example.com/sn-1.jpg"
+    ],
+    "_case": "acreage and rating given as strings: dropped, not coerced"
+  },
+  {
+    "description": "Synthetic test park.",
+    "id": "out-of-range-numbers-test-park",
+    "name": "Out Of Range Numbers Test Park",
+    "location": {
+      "lat": 40.76,
+      "lng": -74.06,
+      "address": "1900 Example Ave, Jersey City, NJ"
+    },
+    "amenities": [
+      "trails"
+    ],
+    "hours": "9:00 AM - 5:00 PM",
+    "acreage": -3,
+    "rating": 6,
+    "images": [
+      "https://images.example.com/on-1.jpg"
+    ],
+    "_case": "negative acreage; rating above 5: both dropped"
+  },
+  {
+    "description": "Synthetic test park.",
+    "id": "zero-values-test-park",
+    "name": "Zero Values Test Park",
+    "location": {
+      "lat": 40.77,
+      "lng": -74.07,
+      "address": "2000 Example Ave, Jersey City, NJ"
+    },
+    "amenities": [
+      "trails"
+    ],
+    "hours": "9:00 AM - 5:00 PM",
+    "acreage": 0,
+    "rating": 0,
+    "images": [
+      "https://images.example.com/zv-1.jpg"
+    ],
+    "_case": "acreage 0 is a real value; rating 0 is below the 1-5 scale and dropped"
+  },
+  {
+    "description": "Synthetic test park.",
+    "id": "Weird ID/with?chars#1",
+    "name": "Odd Id Test Park",
+    "location": {
+      "lat": 40.78,
+      "lng": -74.08,
+      "address": "2100 Example Ave, Jersey City, NJ"
+    },
+    "amenities": [
+      "trails"
+    ],
+    "hours": "9:00 AM - 5:00 PM",
+    "acreage": 5,
+    "rating": 4,
+    "images": [
+      "https://images.example.com/id-1.jpg"
+    ],
+    "_case": "id with spaces, uppercase and URL-significant characters"
+  },
+  {
+    "description": "Synthetic test park.",
+    "id": "extra-fields-test-park",
+    "name": "Extra Fields Test Park",
+    "location": {
+      "lat": 40.79,
+      "lng": -74.09,
+      "address": "2200 Example Ave, Jersey City, NJ"
+    },
+    "amenities": [
+      "trails"
+    ],
+    "hours": "9:00 AM - 5:00 PM",
+    "acreage": 5,
+    "rating": 4,
+    "images": [
+      "https://images.example.com/ef-1.jpg"
+    ],
+    "website": "https://example.com",
+    "capacity": 200,
+    "tags": [
+      "a",
+      "b"
+    ],
+    "_case": "unknown extra fields are ignored"
+  },
+  {
+    "name": "Missing Id Test Park",
+    "description": "No id.",
+    "location": {
+      "lat": 40.7,
+      "lng": -74
+    },
+    "_case": "SKIP: id missing"
+  },
+  {
+    "id": "empty-name-test-park",
+    "name": "   ",
+    "description": "Blank name.",
+    "location": {
+      "lat": 40.7,
+      "lng": -74
+    },
+    "_case": "SKIP: name is only whitespace"
+  },
+  {
+    "id": 7,
+    "name": "Numeric Id Test Park",
+    "location": {
+      "lat": 40.7,
+      "lng": -74
+    },
+    "_case": "SKIP: id is a number"
+  },
+  {
+    "id": "null-name-test-park",
+    "name": null,
+    "location": {
+      "lat": 40.7,
+      "lng": -74
+    },
+    "_case": "SKIP: name is null"
+  },
+  {
+    "id": "liberty-view-green",
+    "name": "Duplicate Of Liberty View Green",
+    "description": "Repeated id.",
+    "location": {
+      "lat": 40.7,
+      "lng": -74
+    },
+    "_case": "SKIP: duplicate id (first record wins)"
+  },
+  "not a park",
+  null,
+  42,
+  []
+]

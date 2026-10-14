@@ -82,8 +82,9 @@ Full list in `PLAN.md` (D1-D12). The ones worth knowing:
   hand.
 - **A park without valid coordinates stays in the list and details** and is
   just left off the map ("Not shown on the map").
-- **Rating is shown without a scale** ("4.7", not "4.7/5") because the data does
-  not state one.
+- **Rating is shown as "4.7 out of 5".** The data itself does not state a scale;
+  the 1-5 scale is an assumption supplied by the owner. Ratings outside 1-5 are
+  treated as invalid and left out.
 - **Amenity labels** are a generic slug transform plus one override
   (`wifi` -> "Wi-Fi"). Unknown slugs still render.
 - **Content-Security-Policy** is a `<meta>` tag added to the production build

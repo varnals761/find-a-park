@@ -24,9 +24,27 @@ function textList(value: unknown): string[] {
   });
 }
 
-// Only http(s) URLs pass, so javascript:, data:, relative paths etc. are dropped.
+// Spellings that mean the same amenity but would not match after slugging.
+const AMENITY_ALIASES = new Map([['wi-fi', 'wifi']]);
+
+// "Dog Run", "dog_run" and "DOG-RUN" all become "dog-run", so filters see one
+// amenity. Duplicates are removed, keeping first-seen order.
+function amenitySlugs(value: unknown): string[] {
+  const slugs = textList(value).flatMap((label) => {
+    const slug = label
+      .toLowerCase()
+      .replace(/[\s_]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+    return slug === '' ? [] : [AMENITY_ALIASES.get(slug) ?? slug];
+  });
+  return [...new Set(slugs)];
+}
+
+// Only http(s) URLs pass, so javascript:, data:, relative paths etc. are
+// dropped. Duplicates are removed (the UI uses the URL as a list key).
 function imageUrls(value: unknown): string[] {
-  return textList(value).filter((candidate) => {
+  const valid = textList(value).filter((candidate) => {
     try {
       const { protocol } = new URL(candidate);
       return protocol === 'http:' || protocol === 'https:';
@@ -34,11 +52,20 @@ function imageUrls(value: unknown): string[] {
       return false;
     }
   });
+  return [...new Set(valid)];
 }
 
 // Finite and >= 0. Zero is a real value, not "missing".
 function nonNegativeNumber(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0
+    ? value
+    : undefined;
+}
+
+// The owner states ratings are on a 1-5 scale (the data itself does not), so
+// anything outside 1-5 is treated as invalid rather than displayed.
+function ratingValue(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 1 && value <= 5
     ? value
     : undefined;
 }
@@ -64,7 +91,7 @@ export function normalizePark(raw: unknown): Park | null {
   const park: Park = {
     id,
     name,
-    amenities: textList(raw.amenities),
+    amenities: amenitySlugs(raw.amenities),
     images: imageUrls(raw.images),
   };
 
@@ -84,7 +111,7 @@ export function normalizePark(raw: unknown): Park | null {
   const acreage = nonNegativeNumber(raw.acreage);
   if (acreage !== undefined) park.acreage = acreage;
 
-  const rating = nonNegativeNumber(raw.rating);
+  const rating = ratingValue(raw.rating);
   if (rating !== undefined) park.rating = rating;
 
   return park;

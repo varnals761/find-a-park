@@ -12,7 +12,7 @@ export function ParkDetails({ park, headingRef }: Props) {
   if (park.address !== undefined) facts.push({ label: 'Address', value: park.address });
   if (park.hours !== undefined) facts.push({ label: 'Hours', value: park.hours });
   if (park.acreage !== undefined) facts.push({ label: 'Acreage', value: String(park.acreage) });
-  if (park.rating !== undefined) facts.push({ label: 'Rating', value: String(park.rating) });
+  if (park.rating !== undefined) facts.push({ label: 'Rating', value: `${park.rating} out of 5` });
 
   return (
     <article>

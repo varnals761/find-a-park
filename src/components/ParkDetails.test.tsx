@@ -33,7 +33,7 @@ describe('ParkDetails', () => {
     expect(screen.getByText('Brooklyn, NY 11225')).toBeInTheDocument();
     expect(screen.getByText('6:00 AM - 1:00 AM')).toBeInTheDocument();
     expect(screen.getByText('526')).toBeInTheDocument();
-    expect(screen.getByText('4.7')).toBeInTheDocument();
+    expect(screen.getByText('4.7 out of 5')).toBeInTheDocument();
     const amenities = screen.getByRole('list', { name: 'Amenities' });
     expect(within(amenities).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
       'Dog run',

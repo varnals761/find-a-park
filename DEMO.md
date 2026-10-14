@@ -56,8 +56,9 @@ each could be wrong:]**
   synthesized clicks instead of keydown events.
 - **`normalizePark.ts`.** Checked by 60+ table-driven tests, including bad
   types, out-of-range coordinates, `javascript:` and `data:` image URLs, and the
-  real sample file. *Could be wrong:* it accepts any non-negative rating (the
-  scale is unknown) and treats `0` as a real value.
+  real sample file. *Could be wrong:* the 1-5 rating scale is an owner-supplied
+  assumption, not in the data; amenity canonicalization (e.g. `Wi-Fi` -> `wifi`)
+  only knows one alias.
 - **The focus effects in `App.tsx`.** They depend on effect declaration order.
   *Checked by:* tests for open, back, first-load, and unknown id; Playwright
   keyboard path. *Could be wrong:* not tested under every history-navigation
@@ -77,7 +78,7 @@ each could be wrong:]**
 ## Decisions to be ready to defend
 - Plain Leaflet and a hash hook instead of react-leaflet / a router.
 - Keeping a park in the list when its coordinates are invalid.
-- Hours verbatim, rating without a scale.
+- Hours verbatim; rating shown "out of 5" on an owner-supplied 1-5 assumption.
 - Disabling axe `target-size` and relying on the WCAG 2.5.8 equivalent-control
   exception (be ready for "isn't that a failure?").
 - CSP as a meta tag, production build only.
