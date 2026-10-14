@@ -56,6 +56,29 @@ None yet. No application code exists.
   classic broken-icon trap), fitBounds result, real keyboard behavior, layout at any width.
   jsdom has no layout, so none of this is evidence about how the map looks.
 
+- Stage 4 (a11y + e2e): Playwright (Chromium) + axe-core against the production build.
+  25 e2e tests pass (11 keyboard/behavior, 14 axe scans). Unit 111, typecheck, lint, audit clean.
+  Browser-verified for the first time: marker icons decode (no broken-icon trap), keyboard path
+  list -> details -> back with focus ring (computed outline >= 2px), marker select via Enter and
+  Space, fallback for failed images, tiles blocked, 320px no horizontal scroll, phone list/details
+  swap, deep link, unknown id, title.
+  axe scans: list, 4 detail variants, not-found, each at desktop and 320px, plus dark +
+  reduced-motion emulation. Zero violations with `target-size` disabled (see below).
+  NOT verified: any real screen reader, a real phone/touch, zoom to 200/400%, Firefox/Safari,
+  text spacing overrides, contrast of the Leaflet map tiles/controls themselves (axe cannot see
+  into tile imagery), tile loading from real OSM (blocked in tests on purpose).
+
+## Real finding: map pins overlap (axe target-size)
+- At the overview zoom neighbouring pins cover each other. axe: "partially obscured (smallest
+  space is 14px by 41px, should be at least 24px by 24px)"; 3 pins at 1280px, 7 at 320px.
+- Not a code bug in the sense of a crash; it is a design limit of 12 close-together points on a
+  small map. Mitigations in place: the list is a full equivalent control on the same page
+  (WCAG 2.5.8 "Equivalent" exception), pins are keyboard-reachable, and users can zoom.
+- Decision: `target-size` is disabled in the axe scan (commented in `e2e/a11y.spec.ts`) so
+  it does not hide other regressions; every non-pin control is covered by an explicit
+  >= 24x24 test. I am relying on the exception, not claiming pins meet the size target.
+- Not fixed: marker clustering/spiderfy (extra dependency, out of scope), larger map.
+
 ## Real defect avoided (found by reading Leaflet 1.9.4 source, not by a test)
 - Leaflet marks markers `role="button"` + `tabindex="0"` but only converts Enter to a click
   for markers with popups (`Popup.js`). A bare marker is focusable and does nothing on Enter.

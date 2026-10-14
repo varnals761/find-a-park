@@ -73,7 +73,7 @@ dev:        npm run dev
 typecheck:  npm run typecheck
 lint:       npm run lint
 test:       npm test
-e2e:        npm run e2e   (Playwright not installed yet; added in stage 4)
+e2e:        npm run e2e   (builds, serves via vite preview on :4173; needs `npx playwright install chromium` once)
 build:      npm run build
 ```
 
